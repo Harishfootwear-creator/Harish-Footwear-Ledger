@@ -124,7 +124,7 @@
     </div>
 
     <script>
-        // --- FIREBASE CONFIG ---
+        // --- 1. FIREBASE CONFIGURATION (FIXED WITH REGIONAL URL) ---
         const firebaseConfig = {
             apiKey: "AIzaSyA0173TPd-8TeMlj1XX1BMy0qRZBSR3BIs",
             authDomain: "harish-footwear-ledger.firebaseapp.com",
@@ -132,19 +132,19 @@
             storageBucket: "harish-footwear-ledger.firebasestorage.app",
             messagingSenderId: "655271008330",
             appId: "1:655271008330:web:d820817a5154a8dd5c2eb3",
-            databaseURL: "https://harish-footwear-ledger-default-rtdb.firebaseio.com/" // Ensure your actual DB URL is here
+            // CRITICAL: Fixed databaseURL for Singapore Region
+            databaseURL: "https://harish-footwear-ledger-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-       
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-       
 
+        const urlParams = new URLSearchParams(window.location.search);
         let storeData = {}; 
         let currentImg = "";
         let adminAuthenticated = false;
 
-        // --- CLOUD SYNC: FETCH DATA ---
+        // --- 2. LIVE DATA SYNC FROM CLOUD ---
         db.ref('harishData').on('value', (snapshot) => {
             const cloudData = snapshot.val();
             if (cloudData) {
@@ -153,17 +153,14 @@
                 if(!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers();
             }
         });
-       
 
         function saveAndSync() {
             db.ref('harishData').set(storeData)
-              .then(() => console.log("Cloud Saved"))
+              .then(() => console.log("Cloud Saved Successfully"))
               .catch((err) => alert("Cloud Sync Failed: " + err.message));
         }
-       
 
-        // --- NAVIGATION ---
-        const urlParams = new URLSearchParams(window.location.search);
+        // --- 3. SECURITY GATE ---
         if (urlParams.get('admin') === 'true') {
             document.getElementById('admin-login-gate').classList.remove('hidden');
             document.getElementById('login-section').classList.add('hidden');
@@ -179,6 +176,7 @@
             } else { alert("Wrong Credentials"); }
         }
 
+        // --- 4. NAVIGATION ---
         function switchTab(tab) {
             document.querySelectorAll('#admin-main-web > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + tab).classList.remove('hidden');
@@ -194,11 +192,10 @@
             else document.getElementById('login-section').classList.remove('hidden');
         }
 
-        // --- OPERATIONS ---
+        // --- 5. DATA OPERATIONS ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
             if(!id) return alert("ID Required");
-            
             if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
             Object.assign(storeData[id], {
                 shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value,
@@ -206,7 +203,8 @@
                 pass: document.getElementById('reg-pass').value
             });
             saveAndSync();
-            alert("Retailer Saved!");
+            alert("Retailer Saved to Cloud!");
+            cancelEdit();
             switchTab('manage');
         }
 
@@ -214,8 +212,7 @@
             const id = document.getElementById('selected-retailer-id').value;
             const amt = parseFloat(document.getElementById('bill-amount').value) || 0;
             const type = document.getElementById('bill-type').value;
-            if(!id || amt <= 0) return alert("Enter valid details");
-            
+            if(!id || amt <= 0) return alert("Select retailer and amount");
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
             storeData[id].history.unshift({
@@ -223,13 +220,14 @@
                 type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg
             });
             saveAndSync();
-            alert("Entry Saved!");
+            alert("Transaction Saved to Cloud!");
             document.getElementById('bill-amount').value = "";
             document.getElementById('search-retailer-input').value = "";
             currentImg = "";
             updateTotal();
         }
 
+        // --- 6. UI RENDERERS ---
         function searchRetailers() {
             const q = document.getElementById('admin-search').value.toLowerCase();
             const container = document.getElementById('retailer-list-container');
@@ -249,16 +247,16 @@
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('u-shop').innerText = u.shopName;
+            document.getElementById('u-id-display').innerText = "Account ID: " + id;
             document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
-            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile}`;
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
             if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
             const hist = u.history || [];
             document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
         }
 
-        // --- DROP SEARCH ---
-        function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
+        // --- 7. UTILS ---
         function filterDropdown() {
             const q = document.getElementById('search-retailer-input').value.toLowerCase();
             const list = document.getElementById('retailer-dropdown-list');
@@ -275,8 +273,8 @@
             document.getElementById('selected-retailer-id').value = id;
             document.getElementById('retailer-dropdown-list').style.display = 'none';
         }
+        function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
 
-        // --- HELPERS ---
         function handleLogin() {
             const id = document.getElementById('login-id').value; const p = document.getElementById('login-pass').value;
             if(storeData[id] && storeData[id].pass === p) showUser(id); else alert("Invalid Login");

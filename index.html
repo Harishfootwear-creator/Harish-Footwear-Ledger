@@ -124,14 +124,15 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE CONFIGURATION ---
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyA0173TPd-8TeMlj1XX1BMy0qRZBSR3BIs",
             authDomain: "harish-footwear-ledger.firebaseapp.com",
             projectId: "harish-footwear-ledger",
             storageBucket: "harish-footwear-ledger.firebasestorage.app",
             messagingSenderId: "655271008330",
-            appId: "1:655271008330:web:d820817a5154a8dd5c2eb3"
+            appId: "1:655271008330:web:d820817a5154a8dd5c2eb3",
+            databaseURL: "https://harish-footwear-ledger-default-rtdb.firebaseio.com/" // Ensure your actual DB URL is here
         };
        
 
@@ -139,31 +140,30 @@
         const db = firebase.database();
        
 
-        const urlParams = new URLSearchParams(window.location.search);
         let storeData = {}; 
         let currentImg = "";
         let adminAuthenticated = false;
 
-        // --- 2. LIVE DATA SYNC ---
-        // Load data automatically whenever it changes in Firebase
+        // --- CLOUD SYNC: FETCH DATA ---
         db.ref('harishData').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                storeData = data;
+            const cloudData = snapshot.val();
+            if (cloudData) {
+                storeData = cloudData;
                 updateTotal();
-                if (!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers();
+                if(!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers();
             }
         });
        
 
         function saveAndSync() {
             db.ref('harishData').set(storeData)
-              .then(() => console.log("Cloud Updated"))
-              .catch((err) => alert("Sync Failed: " + err.message));
+              .then(() => console.log("Cloud Saved"))
+              .catch((err) => alert("Cloud Sync Failed: " + err.message));
         }
        
 
-        // --- 3. SECURITY GATE ---
+        // --- NAVIGATION ---
+        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === 'true') {
             document.getElementById('admin-login-gate').classList.remove('hidden');
             document.getElementById('login-section').classList.add('hidden');
@@ -179,7 +179,6 @@
             } else { alert("Wrong Credentials"); }
         }
 
-        // --- 4. NAVIGATION ---
         function switchTab(tab) {
             document.querySelectorAll('#admin-main-web > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + tab).classList.remove('hidden');
@@ -195,26 +194,19 @@
             else document.getElementById('login-section').classList.remove('hidden');
         }
 
-        // --- 5. RETAILER OPERATIONS ---
+        // --- OPERATIONS ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
-            const oldId = document.getElementById('edit-mode-id').value;
             if(!id) return alert("ID Required");
             
-            if(oldId && oldId !== id) { storeData[id] = storeData[oldId]; delete storeData[oldId]; }
             if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
-
             Object.assign(storeData[id], {
-                shopName: document.getElementById('reg-shop').value, 
-                owner: document.getElementById('reg-name').value,
-                mobile: document.getElementById('reg-mobile').value, 
-                address: document.getElementById('reg-address').value,
+                shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value,
+                mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value,
                 pass: document.getElementById('reg-pass').value
             });
-
             saveAndSync();
-            alert("Retailer Saved to Cloud!");
-            cancelEdit();
+            alert("Retailer Saved!");
             switchTab('manage');
         }
 
@@ -222,41 +214,22 @@
             const id = document.getElementById('selected-retailer-id').value;
             const amt = parseFloat(document.getElementById('bill-amount').value) || 0;
             const type = document.getElementById('bill-type').value;
-            if(!id || amt <= 0) return alert("Select retailer & amount");
-
+            if(!id || amt <= 0) return alert("Enter valid details");
+            
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
-
             storeData[id].history.unshift({
                 date: document.getElementById('bill-date').value || new Date().toLocaleDateString(),
                 type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg
             });
-
             saveAndSync();
-            alert("Transaction Saved to Cloud!");
+            alert("Entry Saved!");
             document.getElementById('bill-amount').value = "";
-            document.getElementById('bill-note').value = "";
             document.getElementById('search-retailer-input').value = "";
-            document.getElementById('selected-retailer-id').value = "";
             currentImg = "";
             updateTotal();
         }
 
-        function cancelEdit() {
-            document.getElementById('edit-mode-id').value = "";
-            document.getElementById('form-title').innerText = "Retailer Registration";
-            document.getElementById('reg-id').value = "";
-            document.getElementById('reg-pass').value = "";
-            document.getElementById('reg-shop').value = "";
-            document.getElementById('reg-name').value = "";
-            document.getElementById('reg-mobile').value = "";
-            document.getElementById('reg-address').value = "";
-            document.getElementById('reg-btn').innerText = "Save Retailer";
-            document.getElementById('reg-btn').style.background = "var(--success)";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-        }
-
-        // --- 6. UI RENDERERS ---
         function searchRetailers() {
             const q = document.getElementById('admin-search').value.toLowerCase();
             const container = document.getElementById('retailer-list-container');
@@ -276,39 +249,15 @@
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('u-shop').innerText = u.shopName;
-            document.getElementById('u-id-display').innerText = "Account ID: " + id;
             document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
-            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
-            
-            if(adminAuthenticated) {
-                document.getElementById('edit-profile-btn').classList.remove('hidden');
-                document.getElementById('edit-profile-btn').onclick = () => { loadEditData(id); };
-            }
-            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile}`;
+            if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
             const hist = u.history || [];
             document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
+            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
         }
 
-        function loadEditData(id) {
-            const u = storeData[id];
-            document.getElementById('dashboard-section').classList.add('hidden');
-            document.getElementById('admin-main-web').classList.remove('hidden');
-            switchTab('add-retailer');
-            document.getElementById('form-title').innerText = "Update Shop Profile";
-            document.getElementById('edit-mode-id').value = id;
-            document.getElementById('reg-id').value = id;
-            document.getElementById('reg-pass').value = u.pass;
-            document.getElementById('reg-shop').value = u.shopName;
-            document.getElementById('reg-name').value = u.owner;
-            document.getElementById('reg-mobile').value = u.mobile;
-            document.getElementById('reg-address').value = u.address;
-            document.getElementById('reg-btn').innerText = "Apply Changes";
-            document.getElementById('reg-btn').style.background = "var(--warning)";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-        }
-
-        // --- 7. DROPDOWN SEARCH ---
+        // --- DROP SEARCH ---
         function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
         function filterDropdown() {
             const q = document.getElementById('search-retailer-input').value.toLowerCase();
@@ -327,15 +276,15 @@
             document.getElementById('retailer-dropdown-list').style.display = 'none';
         }
 
-        // --- 8. UTILS ---
+        // --- HELPERS ---
         function handleLogin() {
             const id = document.getElementById('login-id').value; const p = document.getElementById('login-pass').value;
             if(storeData[id] && storeData[id].pass === p) showUser(id); else alert("Invalid Login");
         }
         function updateTotal() {
             let t = 0; for(let id in storeData) t += storeData[id].balance;
-            const display = document.getElementById('grand-total-display');
-            if (display) display.innerText = "₹" + t.toLocaleString('en-IN');
+            const disp = document.getElementById('grand-total-display');
+            if(disp) disp.innerText = "₹" + t.toLocaleString('en-IN');
         }
         function previewImg(e) { const r = new FileReader(); r.onload = () => currentImg = r.result; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); }
         function downloadExcelBackup() {

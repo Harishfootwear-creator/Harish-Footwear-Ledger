@@ -56,7 +56,7 @@
         <h3 style="text-align: center; color: var(--warning);">Administrator Login</h3>
         <input type="text" id="admin-id-input" placeholder="Admin ID">
         <input type="password" id="admin-pass-input" placeholder="Admin Password">
-        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login</button>
+        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login to Admin Panel</button>
     </div>
 
     <div id="admin-main-web" class="glass-card hidden">
@@ -64,12 +64,14 @@
             <span style="opacity: 0.7; font-size: 12px;">TOTAL MARKET OUTSTANDING</span>
             <div id="grand-total-display" style="font-size: 30px; font-weight: 800; color: var(--warning);">₹0</div>
         </div>
+
         <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
             <button class="tab-btn active-tab" id="t1" onclick="switchTab('add-retailer')">➕ New Shop</button>
             <button class="tab-btn" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
             <button class="tab-btn" id="t3" onclick="switchTab('manage')">🗂️ Manage</button>
             <button class="tab-btn" id="t4" onclick="switchTab('reports')">📊 Reports</button>
         </div>
+
         <div id="sec-add-retailer">
             <h4 id="form-title">Retailer Registration</h4>
             <input type="hidden" id="edit-mode-id">
@@ -82,6 +84,7 @@
             <button id="reg-btn" class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
             <button id="cancel-edit-btn" class="btn-action hidden" style="background: #475569;" onclick="cancelEdit()">Cancel Edit</button>
         </div>
+
         <div id="sec-add-bill" class="hidden">
             <h4>New Transaction</h4>
             <div class="search-select-container">
@@ -93,10 +96,12 @@
             <input type="text" id="bill-note" placeholder="Note"><input type="file" id="bill-file" accept="image/*" capture="environment" onchange="previewImg(event)">
             <button class="btn-action" style="background: var(--primary);" onclick="saveBill()">Save Transaction</button>
         </div>
+
         <div id="sec-manage" class="hidden">
             <input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()">
             <div id="retailer-list-container"></div>
         </div>
+
         <div id="sec-reports" class="hidden">
             <button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup (.xlsx)</button>
             <button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Full Outstanding PDF</button>
@@ -135,6 +140,8 @@
             appId: "1:655271008330:web:d820817a5154a8dd5c2eb3",
             databaseURL: "https://harish-footwear-ledger-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
+       
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
@@ -150,26 +157,29 @@
 
         db.ref('harishData').on('value', (snapshot) => {
             const cloudData = snapshot.val();
-            if (cloudData) { storeData = cloudData; updateTotal(); if(!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers(); }
+            if (cloudData) {
+                storeData = cloudData;
+                updateTotal();
+                if(!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers();
+            }
         });
 
         function saveAndSync() {
             toggleLoader(true, "Syncing Cloud...");
-            db.ref('harishData').set(storeData).then(() => toggleLoader(false)).catch((err) => { toggleLoader(false); alert("Sync Failed: " + err.message); });
+            db.ref('harishData').set(storeData)
+              .then(() => toggleLoader(false))
+              .catch((err) => { toggleLoader(false); alert("Sync Failed: " + err.message); });
         }
 
-        // --- PDF GENERATOR (CUSTOMIZED) ---
         function generateRetailerPDF(id) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const u = storeData[id];
 
-            // Header Title
             doc.setFontSize(20);
             doc.setTextColor(59, 130, 246);
             doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
 
-            // Condensed 3-Line Retailer Detail Header
             doc.setFontSize(10);
             doc.setTextColor(0);
             doc.text(`Shop: ${u.shopName} | ID: ${id} | Password: ${u.pass}`, 14, 25);
@@ -189,7 +199,6 @@
                 return [i.date, i.note || '-', isCredit ? `Rs. ${amt}` : '-', !isCredit ? `Rs. ${amt}` : '-'];
             });
 
-            // Table with dedicated Payment/Credit columns
             doc.autoTable({
                 startY: 42,
                 head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']],
@@ -198,7 +207,6 @@
                 columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
             });
 
-            // Bottom Summary
             const finalY = doc.lastAutoTable.finalY + 10;
             doc.setFontSize(11);
             doc.text(`Total Credit (+): Rs. ${totalCredit}`, 196, finalY, { align: 'right' });
@@ -212,13 +220,19 @@
             doc.save(`${u.shopName}_Statement.pdf`);
         }
 
-        // --- NAVIGATION & SECURITY ---
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === 'true') { document.getElementById('admin-login-gate').classList.remove('hidden'); document.getElementById('login-section').classList.add('hidden'); }
+        if (urlParams.get('admin') === 'true') {
+            document.getElementById('admin-login-gate').classList.remove('hidden');
+            document.getElementById('login-section').classList.add('hidden');
+        }
 
         function unlockAdmin() {
-            if (document.getElementById('admin-id-input').value === "aditya" && document.getElementById('admin-pass-input').value === "aditya9050") {
-                adminAuthenticated = true; document.getElementById('admin-login-gate').classList.add('hidden'); document.getElementById('admin-main-web').classList.remove('hidden'); updateTotal();
+            if (document.getElementById('admin-id-input').value === "aditya" && 
+                document.getElementById('admin-pass-input').value === "aditya9050") {
+                adminAuthenticated = true;
+                document.getElementById('admin-login-gate').classList.add('hidden');
+                document.getElementById('admin-main-web').classList.remove('hidden');
+                updateTotal();
             } else { alert("Wrong Credentials"); }
         }
 
@@ -231,15 +245,24 @@
             if(tab === 'manage') searchRetailers();
         }
 
-        function goBack() { document.getElementById('dashboard-section').classList.add('hidden'); if(adminAuthenticated) document.getElementById('admin-main-web').classList.remove('hidden'); else document.getElementById('login-section').classList.remove('hidden'); }
+        function goBack() {
+            document.getElementById('dashboard-section').classList.add('hidden');
+            if(adminAuthenticated) document.getElementById('admin-main-web').classList.remove('hidden');
+            else document.getElementById('login-section').classList.remove('hidden');
+        }
 
-        // --- CORE FUNCTIONS ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
             if(!id) return alert("ID Required");
             if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
-            Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value });
-            saveAndSync(); alert("Retailer Saved!"); switchTab('manage');
+            Object.assign(storeData[id], {
+                shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value,
+                mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value,
+                pass: document.getElementById('reg-pass').value
+            });
+            saveAndSync();
+            alert("Retailer Saved!");
+            switchTab('manage');
         }
 
         function saveBill() {
@@ -249,8 +272,16 @@
             if(!id || amt <= 0) return alert("Details missing");
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
-            storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg });
-            saveAndSync(); alert("Transaction Saved!"); document.getElementById('bill-amount').value = ""; currentImg = "";
+            storeData[id].history.unshift({
+                date: document.getElementById('bill-date').value || new Date().toLocaleDateString(),
+                type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg
+            });
+            saveAndSync();
+            alert("Transaction Saved!");
+            document.getElementById('bill-amount').value = "";
+            document.getElementById('search-retailer-input').value = "";
+            currentImg = "";
+            updateTotal();
         }
 
         function searchRetailers() {
@@ -258,8 +289,9 @@
             const container = document.getElementById('retailer-list-container');
             let h = "";
             for(let id in storeData) {
-                if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) {
-                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span class="${storeData[id].balance >= 0 ? 'amt-pos' : 'amt-neg'}">₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
+                const u = storeData[id];
+                if(id.includes(q) || u.shopName.toLowerCase().includes(q)) {
+                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${u.shopName}</b><span class="${u.balance >= 0 ? 'amt-pos' : 'amt-neg'}">₹${u.balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
                 }
             }
             container.innerHTML = h;
@@ -277,8 +309,14 @@
             if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
             const hist = u.history || [];
             document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
+            
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-            document.getElementById('wa-btn').onclick = () => window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(`Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
+            
+            document.getElementById('wa-btn').onclick = () => {
+                const portalLink = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
+                const message = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portalLink}`;
+                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(message)}`);
+            };
         }
 
         function previewImg(e) {

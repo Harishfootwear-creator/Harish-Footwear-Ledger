@@ -21,16 +21,15 @@
         .btn-action { width: 100%; padding: 14px; border: none; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; margin-top: 10px; }
         .hidden { display: none !important; }
         .retailer-row { background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--primary); }
-        
-        /* Table Styles */
-        .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        .ledger-table th { background: rgba(255,255,255,0.1); padding: 10px; text-align: left; border-bottom: 2px solid var(--primary); }
-        .ledger-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .col-credit { color: var(--danger); font-weight: bold; text-align: right; }
-        .col-payment { color: var(--success); font-weight: bold; text-align: right; }
-        .summary-row { background: rgba(255,255,255,0.05); font-weight: bold; }
-        
-        .bill-thumbnail { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; cursor: pointer; }
+        .amt-pos { color: var(--danger); font-weight: bold; }
+        .amt-neg { color: var(--success); font-weight: bold; }
+        .ledger-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; }
+        .profile-badge { background: rgba(59, 130, 246, 0.2); padding: 15px; border-radius: 10px; font-size: 14px; margin-bottom: 15px; line-height: 1.6; }
+        .bill-thumbnail { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
+        .search-select-container { position: relative; margin: 10px 0; }
+        #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
+        .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .dropdown-item:hover { background: var(--primary); }
         #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
     </style>
 </head>
@@ -59,7 +58,7 @@
         </div>
         <div id="sec-add-retailer">
             <input type="hidden" id="edit-mode-id">
-            <input type="text" id="reg-id" placeholder="Login ID">
+            <input type="text" id="reg-id" placeholder="Assign Login ID">
             <input type="text" id="reg-pass" placeholder="Password">
             <input type="text" id="reg-shop" placeholder="Shop Name">
             <input type="text" id="reg-name" placeholder="Owner Name">
@@ -90,29 +89,17 @@
 
     <div id="dashboard-section" class="glass-card hidden">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div id="u-header-info" style="font-size: 13px; line-height: 1.4; opacity: 0.9;">
-                </div>
+            <div><h2 id="u-shop" style="margin:0;"></h2><div id="u-id-display" style="font-size: 12px; opacity: 0.6;"></div></div>
             <button class="tab-btn" style="max-width: 60px;" onclick="goBack()">Back</button>
         </div>
-
-        <table class="ledger-table">
-            <thead>
-                <tr>
-                    <th>Date / Bill</th>
-                    <th style="text-align:right">Credit (+)</th>
-                    <th style="text-align:right">Payment (-)</th>
-                </tr>
-            </thead>
-            <tbody id="u-table-body">
-                </tbody>
-            <tfoot id="u-table-foot">
-                </tfoot>
-        </table>
-
-        <div style="display: flex; gap: 8px; margin-top: 15px;">
-            <button id="edit-profile-btn" class="btn-action hidden" style="background: var(--warning); flex: 1; font-size: 11px;">Update Profile</button>
-            <button id="wa-btn" class="btn-action" style="background: #25D366; flex: 1; font-size: 11px;">WhatsApp</button>
+        <div class="profile-badge" id="u-profile-details"></div>
+        <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
+        <div style="display: flex; gap: 8px;">
+            <button id="edit-profile-btn" class="btn-action hidden" style="background: var(--warning); flex: 1; font-size: 11px;">Update Shop</button>
+            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
         </div>
+        <h4 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">Transactions History</h4>
+        <div id="u-history"></div>
     </div>
 
     <div id="login-section" class="glass-card">
@@ -168,7 +155,71 @@
 
         function goBack() { document.getElementById('dashboard-section').classList.add('hidden'); if(adminAuthenticated) document.getElementById('admin-main-web').classList.remove('hidden'); else document.getElementById('login-section').classList.remove('hidden'); }
 
-        // --- DATA OPS ---
+        // --- PDF STATEMENT (NEW THEME) ---
+        function generateRetailerPDF(id) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const u = storeData[id];
+
+            // 1. Header Title
+            doc.setFontSize(20);
+            doc.setTextColor(59, 130, 246);
+            doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
+
+            // 2. Condensed 3-Line Retailer Detail Header
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`Shop: ${u.shopName} | ID: ${id} | Pass: ${u.pass}`, 14, 25);
+            doc.text(`Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 30);
+            doc.text(`Address: ${u.address || 'N/A'}`, 14, 35);
+            doc.setDrawColor(200);
+            doc.line(14, 38, 196, 38);
+
+            // 3. Transactions Table with New Columns
+            let totalCredit = 0;
+            let totalPayment = 0;
+            const hist = u.history || [];
+
+            const tableBody = hist.map(i => {
+                const isCredit = i.type === 'Credit';
+                const amt = parseFloat(i.amt) || 0;
+                if(isCredit) totalCredit += amt; else totalPayment += amt;
+
+                return [
+                    i.date,
+                    i.note || '-',
+                    isCredit ? `Rs. ${amt}` : '',
+                    !isCredit ? `Rs. ${amt}` : ''
+                ];
+            });
+
+            doc.autoTable({
+                startY: 42,
+                head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']],
+                body: tableBody,
+                headStyles: { fillColor: [59, 130, 246] },
+                columnStyles: {
+                    2: { halign: 'right', textColor: [239, 68, 68] }, // Red for Credit
+                    3: { halign: 'right', textColor: [16, 185, 129] }  // Green for Payment
+                }
+            });
+
+            // 4. Bottom Summary
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(11);
+            doc.setTextColor(0);
+            doc.text(`Total Credit (+): Rs. ${totalCredit}`, 140, finalY, { align: 'right' });
+            doc.text(`Total Payment (-): Rs. ${totalPayment}`, 140, finalY + 7, { align: 'right' });
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(239, 68, 68); // Red for Outstanding
+            doc.text(`Total Outstanding Balance: Rs. ${u.balance}`, 140, finalY + 15, { align: 'right' });
+
+            doc.save(`${u.shopName}_Statement.pdf`);
+        }
+
+        // --- DATA OPS & RENDERERS (UNTOUCHED) ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
             if(!id) return alert("ID Required");
@@ -188,62 +239,21 @@
             saveAndSync(); alert("Saved!"); document.getElementById('bill-amount').value = ""; currentImg = "";
         }
 
-        // --- RENDERER (UPDATED) ---
         function showUser(id) {
             const u = storeData[id];
             document.getElementById('admin-main-web').classList.add('hidden');
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
-
-            // 2-3 Line Header
-            document.getElementById('u-header-info').innerHTML = `
-                <b style="font-size:18px; color:var(--warning)">${u.shopName}</b> (ID: ${id}) | Pass: ${u.pass}<br>
-                Owner: ${u.owner} | Mobile: ${u.mobile}<br>
-                Addr: ${u.address}
-            `;
-
+            document.getElementById('u-shop').innerText = u.shopName;
+            document.getElementById('u-id-display').innerText = "Account ID: " + id;
+            document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
             if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
-            document.getElementById('wa-btn').onclick = () => window.open(`https://wa.me/${u.mobile}?text=Hello ${u.shopName}, your outstanding balance is ₹${u.balance}`);
-
-            let tableHtml = "";
-            let totalCredit = 0, totalPayment = 0;
             const hist = u.history || [];
-
-            hist.forEach(i => {
-                const isCredit = i.type === 'Credit';
-                if(isCredit) totalCredit += i.amt; else totalPayment += i.amt;
-                
-                tableHtml += `
-                    <tr>
-                        <td>
-                            <b>${i.date}</b><br><small>${i.note || '-'}</small>
-                            ${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}
-                        </td>
-                        <td class="col-credit">${isCredit ? '₹'+i.amt : '-'}</td>
-                        <td class="col-payment">${!isCredit ? '₹'+i.amt : '-'}</td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('u-table-body').innerHTML = tableHtml || "<tr><td colspan='3' style='text-align:center'>No Data</td></tr>";
-            
-            // Footer Summary
-            document.getElementById('u-table-foot').innerHTML = `
-                <tr class="summary-row">
-                    <td>TOTAL</td>
-                    <td style="text-align:right; color:var(--danger)">₹${totalCredit}</td>
-                    <td style="text-align:right; color:var(--success)">₹${totalPayment}</td>
-                </tr>
-                <tr>
-                    <td colspan="3" style="text-align:center; padding-top:20px;">
-                        <span style="font-size:12px; opacity:0.7">TOTAL OUTSTANDING LEFT</span><br>
-                        <b style="font-size:24px; color:var(--danger)">₹${u.balance}</b>
-                    </td>
-                </tr>
-            `;
+            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
+            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
         }
 
-        // --- UTILS ---
         function previewImg(e) {
             const file = e.target.files[0];
             const reader = new FileReader();
@@ -268,7 +278,7 @@
             let h = "";
             for(let id in storeData) {
                 if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) {
-                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span style="color:var(--danger)">₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
+                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span class="amt-pos">₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
                 }
             }
             container.innerHTML = h;

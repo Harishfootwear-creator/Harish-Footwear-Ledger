@@ -282,7 +282,7 @@
 
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
             document.getElementById('wa-btn').onclick = () => {
-                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details.`;
+                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
                 window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(msg)}`);
             };
 

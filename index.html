@@ -278,7 +278,7 @@
             const hist = u.history || [];
             document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-            document.getElementById('wa-btn').onclick = () => window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent('Hello ' + u.shopName + ', outstanding: Rs.' + u.balance)}`);
+            document.getElementById('wa-btn').onclick = () => window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(`Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
         }
 
         function previewImg(e) {

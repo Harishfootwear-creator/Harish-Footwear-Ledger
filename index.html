@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
@@ -40,9 +39,18 @@
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .dropdown-item:hover { background: var(--primary); }
+        
+        /* Loading Spinner */
+        #loader { 
+            position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; 
+            padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; 
+            display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
+
+    <div id="loader">Processing...</div>
 
     <h2 style="letter-spacing: 2px;">👞 HARISH FOOTWEAR</h2>
 
@@ -110,9 +118,9 @@
         <div class="profile-badge" id="u-profile-details"></div>
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button id="edit-profile-btn" class="btn-action hidden" style="background: var(--warning); flex: 1; font-size: 12px;">✏️ Update Shop</button>
-            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 12px;">📄 PDF Statement</button>
-            <button id="wa-btn" class="btn-action" style="background: #25D366; flex: 1; font-size: 12px;">💬 WhatsApp</button>
+            <button id="edit-profile-btn" class="btn-action hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
+            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
+            <button id="wa-btn" class="btn-action" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
         </div>
         <h4 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">Transactions History</h4>
         <div id="u-history"></div>
@@ -125,7 +133,7 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE CONFIGURATION (FIXED REGIONAL URL) ---
+        // --- 1. FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyA0173TPd-8TeMlj1XX1BMy0qRZBSR3BIs",
             authDomain: "harish-footwear-ledger.firebaseapp.com",
@@ -140,12 +148,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        const urlParams = new URLSearchParams(window.location.search);
         let storeData = {}; 
         let currentImg = "";
         let adminAuthenticated = false;
 
-        // --- 2. CLOUD SYNC: FETCH DATA ---
+        // --- 2. CLOUD SYNC & LOADER ---
+        function toggleLoader(show, text = "Processing...") {
+            const loader = document.getElementById('loader');
+            loader.innerText = text;
+            loader.style.display = show ? 'block' : 'none';
+        }
+
         db.ref('harishData').on('value', (snapshot) => {
             const cloudData = snapshot.val();
             if (cloudData) {
@@ -156,12 +169,46 @@
         });
 
         function saveAndSync() {
+            toggleLoader(true, "Syncing Cloud...");
             db.ref('harishData').set(storeData)
-              .then(() => console.log("Cloud Saved"))
-              .catch((err) => alert("Cloud Sync Failed: " + err.message));
+              .then(() => toggleLoader(false))
+              .catch((err) => { toggleLoader(false); alert("Sync Failed: " + err.message); });
         }
 
-        // --- 3. NAVIGATION & SECURITY ---
+        // --- 3. IMAGE COMPRESSION (MIN 500KB TARGET) ---
+        function previewImg(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            toggleLoader(true, "Compressing Image...");
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 1200; 
+                    if (width > height) {
+                        if (width > max_size) { height *= max_size / width; width = max_size; }
+                    } else {
+                        if (height > max_size) { width *= max_size / height; height = max_size; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    // 0.7 quality balances clarity and request size
+                    currentImg = canvas.toDataURL('image/jpeg', 0.7); 
+                    toggleLoader(false);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- 4. NAVIGATION & SECURITY ---
+        const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === 'true') {
             document.getElementById('admin-login-gate').classList.remove('hidden');
             document.getElementById('login-section').classList.add('hidden');
@@ -192,24 +239,18 @@
             else document.getElementById('login-section').classList.remove('hidden');
         }
 
-        // --- 4. DATA OPERATIONS ---
+        // --- 5. OPERATIONS ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
-            const oldId = document.getElementById('edit-mode-id').value;
             if(!id) return alert("ID Required");
-            
-            if(oldId && oldId !== id) { storeData[id] = storeData[oldId]; delete storeData[oldId]; }
             if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
-
             Object.assign(storeData[id], {
                 shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value,
                 mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value,
                 pass: document.getElementById('reg-pass').value
             });
-
             saveAndSync();
             alert("Retailer Saved!");
-            cancelEdit();
             switchTab('manage');
         }
 
@@ -217,8 +258,7 @@
             const id = document.getElementById('selected-retailer-id').value;
             const amt = parseFloat(document.getElementById('bill-amount').value) || 0;
             const type = document.getElementById('bill-type').value;
-            if(!id || amt <= 0) return alert("Enter valid details");
-            
+            if(!id || amt <= 0) return alert("Details missing");
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
             storeData[id].history.unshift({
@@ -226,40 +266,22 @@
                 type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg
             });
             saveAndSync();
-            alert("Entry Saved!");
+            alert("Transaction Saved!");
             document.getElementById('bill-amount').value = "";
             document.getElementById('search-retailer-input').value = "";
             currentImg = "";
             updateTotal();
         }
 
-        function cancelEdit() {
-            document.getElementById('edit-mode-id').value = "";
-            document.getElementById('form-title').innerText = "Retailer Registration";
-            document.getElementById('reg-id').value = "";
-            document.getElementById('reg-pass').value = "";
-            document.getElementById('reg-shop').value = "";
-            document.getElementById('reg-name').value = "";
-            document.getElementById('reg-mobile').value = "";
-            document.getElementById('reg-address').value = "";
-            document.getElementById('reg-btn').innerText = "Save Retailer";
-            document.getElementById('reg-btn').style.background = "var(--success)";
-            document.getElementById('cancel-edit-btn').classList.add('hidden');
-        }
-
-        // --- 5. RENDERERS & SEARCH ---
+        // --- 6. RENDERERS ---
         function searchRetailers() {
             const q = document.getElementById('admin-search').value.toLowerCase();
             const container = document.getElementById('retailer-list-container');
             let h = "";
             for(let id in storeData) {
                 const u = storeData[id];
-                if(id.includes(q) || u.shopName.toLowerCase().includes(q) || u.mobile.includes(q)) {
-                    h += `<div class="retailer-row">
-                        <div style="display:flex; justify-content:space-between"><b>${u.shopName}</b><span class="${u.balance >= 0 ? 'amt-pos' : 'amt-neg'}">₹${u.balance}</span></div>
-                        <div style="font-size:11px; opacity:0.6; margin-top:5px;">ID: ${id} | Mob: ${u.mobile}</div>
-                        <button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details & Update</button>
-                    </div>`;
+                if(id.includes(q) || u.shopName.toLowerCase().includes(q)) {
+                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${u.shopName}</b><span class="${u.balance >= 0 ? 'amt-pos' : 'amt-neg'}">₹${u.balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
                 }
             }
             container.innerHTML = h;
@@ -271,50 +293,19 @@
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('u-shop').innerText = u.shopName;
-            document.getElementById('u-id-display').innerText = "Account ID: " + id;
             document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
             document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
-            
-            if(adminAuthenticated) {
-                document.getElementById('edit-profile-btn').classList.remove('hidden');
-                document.getElementById('edit-profile-btn').onclick = () => { loadEditData(id); };
-            }
-
+            if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
+            const hist = u.history || [];
+            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
             document.getElementById('wa-btn').onclick = () => {
-                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
+                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}.`;
                 window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(msg)}`);
             };
-
-            const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item">
-                <div style="display:flex; justify-content:space-between">
-                    <div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div>
-                    <b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b>
-                </div>
-            </div>`).join('');
         }
 
-        function loadEditData(id) {
-            const u = storeData[id];
-            document.getElementById('dashboard-section').classList.add('hidden');
-            document.getElementById('admin-main-web').classList.remove('hidden');
-            switchTab('add-retailer');
-            document.getElementById('form-title').innerText = "Update Shop Profile";
-            document.getElementById('edit-mode-id').value = id;
-            document.getElementById('reg-id').value = id;
-            document.getElementById('reg-pass').value = u.pass;
-            document.getElementById('reg-shop').value = u.shopName;
-            document.getElementById('reg-name').value = u.owner;
-            document.getElementById('reg-mobile').value = u.mobile;
-            document.getElementById('reg-address').value = u.address;
-            document.getElementById('reg-btn').innerText = "Apply Changes";
-            document.getElementById('reg-btn').style.background = "var(--warning)";
-            document.getElementById('cancel-edit-btn').classList.remove('hidden');
-        }
-
-        // --- 6. DROP SEARCH & UTILS ---
-        function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
+        // --- 7. UTILS ---
         function filterDropdown() {
             const q = document.getElementById('search-retailer-input').value.toLowerCase();
             const list = document.getElementById('retailer-dropdown-list');
@@ -331,7 +322,7 @@
             document.getElementById('selected-retailer-id').value = id;
             document.getElementById('retailer-dropdown-list').style.display = 'none';
         }
-
+        function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
         function handleLogin() {
             const id = document.getElementById('login-id').value; const p = document.getElementById('login-pass').value;
             if(storeData[id] && storeData[id].pass === p) showUser(id); else alert("Invalid Login");
@@ -341,7 +332,6 @@
             const disp = document.getElementById('grand-total-display');
             if(disp) disp.innerText = "₹" + t.toLocaleString('en-IN');
         }
-        function previewImg(e) { const r = new FileReader(); r.onload = () => currentImg = r.result; if(e.target.files[0]) r.readAsDataURL(e.target.files[0]); }
         function downloadExcelBackup() {
             const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance })));
             const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Harish_Backup.xlsx");

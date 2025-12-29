@@ -66,26 +66,13 @@
         </div>
 
         <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
-            <button class="tab-btn active-tab" id="t1" onclick="switchTab('add-retailer')">➕ New Shop</button>
-            <button class="tab-btn" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
+            <button class="tab-btn active-tab" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
             <button class="tab-btn" id="t3" onclick="switchTab('manage')">🗂️ Manage</button>
+            <button class="tab-btn" id="t1" onclick="switchTab('add-retailer')">➕ New Shop</button>
             <button class="tab-btn" id="t4" onclick="switchTab('reports')">📊 Reports</button>
         </div>
 
-        <div id="sec-add-retailer">
-            <h4 id="form-title">Retailer Registration</h4>
-            <input type="hidden" id="edit-mode-id">
-            <input type="text" id="reg-id" placeholder="Assign Login ID">
-            <input type="text" id="reg-pass" placeholder="Password">
-            <input type="text" id="reg-shop" placeholder="Shop Name">
-            <input type="text" id="reg-name" placeholder="Owner Name">
-            <input type="tel" id="reg-mobile" placeholder="Mobile 1">
-            <textarea id="reg-address" placeholder="Address" rows="2"></textarea>
-            <button id="reg-btn" class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
-            <button id="cancel-edit-btn" class="btn-action hidden" style="background: #475569;" onclick="cancelEdit()">Cancel Edit</button>
-        </div>
-
-        <div id="sec-add-bill" class="hidden">
+        <div id="sec-add-bill">
             <h4>New Transaction</h4>
             <div class="search-select-container">
                 <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name / ID" onfocus="showDropdown()" onkeyup="filterDropdown()">
@@ -100,6 +87,19 @@
         <div id="sec-manage" class="hidden">
             <input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()">
             <div id="retailer-list-container"></div>
+        </div>
+
+        <div id="sec-add-retailer" class="hidden">
+            <h4 id="form-title">Retailer Registration</h4>
+            <input type="hidden" id="edit-mode-id">
+            <input type="text" id="reg-id" placeholder="Assign Login ID">
+            <input type="text" id="reg-pass" placeholder="Password">
+            <input type="text" id="reg-shop" placeholder="Shop Name">
+            <input type="text" id="reg-name" placeholder="Owner Name">
+            <input type="tel" id="reg-mobile" placeholder="Mobile 1">
+            <textarea id="reg-address" placeholder="Address" rows="2"></textarea>
+            <button id="reg-btn" class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
+            <button id="cancel-edit-btn" class="btn-action hidden" style="background: #475569;" onclick="cancelEdit()">Cancel Edit</button>
         </div>
 
         <div id="sec-reports" class="hidden">
@@ -140,7 +140,6 @@
             appId: "1:655271008330:web:d820817a5154a8dd5c2eb3",
             databaseURL: "https://harish-footwear-ledger-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-       
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();

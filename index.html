@@ -9,7 +9,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
         :root { --primary: #3b82f6; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --glass: rgba(255, 255, 255, 0.05); }
@@ -29,11 +28,14 @@
         #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .staff-list-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
-        .staff-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px; }
-        .del-icon { cursor: pointer; color: var(--danger); font-size: 14px; background: none; border: none; padding: 5px; }
+        
         .refresh-btn { position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; backdrop-filter: blur(5px); transition: 0.3s; }
         .refresh-btn:hover { background: var(--primary); transform: rotate(90deg); }
+
+        .staff-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .staff-info { display: flex; justify-content: space-between; align-items: center; }
+        .staff-log { font-size: 10px; opacity: 0.7; margin-top: 5px; color: var(--warning); }
+        .del-stf { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -94,7 +96,7 @@
         <div id="sec-add-staff" class="hidden admin-only">
             <h4>Staff Management</h4>
             <input type="text" id="stf-id" placeholder="Staff ID"><input type="text" id="stf-pass" placeholder="Staff Password"><button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Account</button>
-            <h5 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">Existing Staff</h5>
+            <h5 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">Existing Staff Activity</h5>
             <div id="staff-management-list"></div>
         </div>
         <div id="sec-reports" class="hidden admin-only"><button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button><button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button></div>
@@ -108,7 +110,7 @@
         <div class="profile-badge" id="u-profile-details"></div>
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
+            <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">Update Shop</button>
             <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">PDF Statement</button>
             <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">WhatsApp</button>
         </div>
@@ -132,9 +134,7 @@
         let storeData = {}; let staffData = {}; let currentImg = ""; 
         let userRole = sessionStorage.getItem('userRole') || "retailer";
         let loggedInId = sessionStorage.getItem('loggedInId') || "";
-        let failedAttempts = 0;
 
-        // --- SESSION PERSISTENCE ON LOAD ---
         window.onload = function() {
             if (loggedInId) {
                 if (userRole === 'admin') unlockAdmin(true);
@@ -146,11 +146,6 @@
         db.ref('harishData').on('value', snap => { storeData = snap.val() || {}; updateTotal(); });
         db.ref('staffUsers').on('value', snap => { staffData = snap.val() || {}; renderStaffList(); });
 
-        function sendSecurityAlert(msg) {
-            console.log("Security Alert Sent to pg531381@gmail.com");
-            // Note: In real use, you'd call an Email API here like EmailJS.
-        }
-
         function unlockAdmin(isAuto = false) {
             const id = isAuto ? "aditya" : document.getElementById('admin-id-input').value;
             const pass = isAuto ? "aditya9050" : document.getElementById('admin-pass-input').value;
@@ -159,12 +154,12 @@
                 sessionStorage.setItem('userRole', 'admin'); sessionStorage.setItem('loggedInId', 'aditya');
                 document.getElementById('admin-login-gate').classList.add('hidden');
                 document.getElementById('admin-main-web').classList.remove('hidden');
-            } else { failedAttempts++; if(failedAttempts > 2) sendSecurityAlert("Admin login failure"); alert("Wrong Credentials"); }
+            } else { alert("Wrong Credentials"); }
         }
 
         function unlockStaff(isAuto = false) {
             const id = isAuto ? loggedInId : document.getElementById('staff-id-input').value;
-            const pass = isAuto ? staffData[id].pass : document.getElementById('staff-pass-input').value;
+            const pass = isAuto ? (staffData[id] ? staffData[id].pass : '') : document.getElementById('staff-pass-input').value;
             if (staffData[id] && (isAuto || staffData[id].pass === pass)) {
                 userRole = "staff"; loggedInId = id;
                 sessionStorage.setItem('userRole', 'staff'); sessionStorage.setItem('loggedInId', id);
@@ -183,14 +178,7 @@
             } else { alert("Invalid"); }
         }
 
-        function logout() {
-            sessionStorage.clear(); location.reload();
-        }
-
-        function saveAndSync() {
-            document.getElementById('loader').style.display = 'block';
-            db.ref('harishData').set(storeData).then(() => document.getElementById('loader').style.display = 'none');
-        }
+        function logout() { sessionStorage.clear(); location.reload(); }
 
         function registerStaff() {
             const id = document.getElementById('stf-id').value; const pass = document.getElementById('stf-pass').value;
@@ -201,11 +189,56 @@
         function renderStaffList() {
             let h = "";
             for(let id in staffData) {
-                h += `<div class="staff-list-item"><div class="staff-header"><b>ID: ${id}</b> <button class="del-icon" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button></div></div>`;
+                let activity = [];
+                for(let rId in storeData) {
+                    const logs = (storeData[rId].history || []).filter(item => item.by === id);
+                    if(logs.length > 0) activity.push(`${storeData[rId].shopName} (${logs.length})`);
+                }
+                h += `<div class="staff-card">
+                    <div class="staff-info"><b>${id}</b> <button class="del-stf" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button></div>
+                    <div class="staff-log">Recent: ${activity.length > 0 ? activity.join(", ") : "No activity"}</div>
+                </div>`;
             }
             document.getElementById('staff-management-list').innerHTML = h || "No staff.";
         }
 
+        // --- PDF GENERATOR (NEW FINANCIAL THEME) ---
+        function generateRetailerPDF(id) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); const u = storeData[id];
+            doc.setFontSize(22); doc.setTextColor(59, 130, 246);
+            doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
+            
+            doc.setFontSize(10); doc.setTextColor(0);
+            doc.text(`Shop: ${u.shopName} | Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 25);
+            doc.text(`ID: ${id} | Password: ${u.pass} | Address: ${u.address || 'N/A'}`, 14, 30);
+            doc.line(14, 33, 196, 33);
+
+            let totalCredit = 0, totalPayment = 0;
+            const tableBody = (u.history || []).map(i => {
+                const isCredit = i.type === 'Credit';
+                const amt = parseFloat(i.amt) || 0;
+                if(isCredit) totalCredit += amt; else totalPayment += amt;
+                return [i.date, i.note || '-', isCredit ? `Rs. ${amt}` : '-', !isCredit ? `Rs. ${amt}` : '-'];
+            });
+
+            doc.autoTable({
+                startY: 37,
+                head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']],
+                body: tableBody,
+                headStyles: { fillColor: [59, 130, 246] },
+                columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFont(undefined, 'bold');
+            doc.text(`Total Credit (+): Rs. ${totalCredit}`, 196, finalY, { align: 'right' });
+            doc.text(`Total Payment (-): Rs. ${totalPayment}`, 196, finalY + 6, { align: 'right' });
+            doc.setTextColor(239, 68, 68); doc.setFontSize(14);
+            doc.text(`Total Outstanding Balance: Rs. ${u.balance}`, 196, finalY + 15, { align: 'right' });
+            doc.save(`${u.shopName}_Statement.pdf`);
+        }
+
+        // Rest of the Core Logic (Search, Tabs, Bills)
         function switchTab(tab) {
             document.querySelectorAll('#admin-main-web > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + tab).classList.remove('hidden');
@@ -224,9 +257,12 @@
             document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
             document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile}`;
             if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-            const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
+            document.getElementById('u-history').innerHTML = (u.history || []).map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
+            document.getElementById('wa-btn').onclick = () => {
+                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Portal: https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
+                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(msg)}`);
+            };
         }
 
         function saveBill() {
@@ -237,36 +273,8 @@
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
             storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg, by: userRole === "staff" ? loggedInId : "Admin" });
-            saveAndSync(); alert("Saved!");
-        }
-
-        function goBack() {
-            document.getElementById('dashboard-section').classList.add('hidden');
-            if(userRole === "admin" || userRole === "staff") document.getElementById('admin-main-web').classList.remove('hidden');
-            else document.getElementById('login-section').classList.remove('hidden');
-        }
-
-        function generateRetailerPDF(id) {
-            const { jsPDF } = window.jspdf; const doc = new jsPDF(); const u = storeData[id];
-            doc.text("Statement: " + u.shopName, 14, 15);
-            doc.autoTable({ head: [['Date', 'Type', 'Amount']], body: (u.history || []).map(i => [i.date, i.type, i.amt]) });
-            doc.save("Statement.pdf");
-        }
-
-        function previewImg(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = f => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height; if(w > 1200){ h *= 1200/w; w = 1200; }
-                    canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    currentImg = canvas.toDataURL('image/jpeg', 0.6);
-                };
-                img.src = f.target.result;
-            };
-            reader.readAsDataURL(file);
+            document.getElementById('loader').style.display = 'block';
+            db.ref('harishData').set(storeData).then(() => { document.getElementById('loader').style.display = 'none'; alert("Saved!"); });
         }
 
         function searchRetailers() {
@@ -283,8 +291,11 @@
         function selectRetailer(id, name) { document.getElementById('search-retailer-input').value = name; document.getElementById('selected-retailer-id').value = id; document.getElementById('retailer-dropdown-list').style.display = 'none'; }
         function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
         function updateTotal() { let t = 0; for(let id in storeData) t += storeData[id].balance; document.getElementById('grand-total-display').innerText = "₹" + t.toLocaleString('en-IN'); }
+        function goBack() { document.getElementById('dashboard-section').classList.add('hidden'); if(userRole === "admin" || userRole === "staff") document.getElementById('admin-main-web').classList.remove('hidden'); else document.getElementById('login-section').classList.remove('hidden'); }
+        function registerRetailer() { const id = document.getElementById('reg-id').value; if(!id) return alert("Required"); if(!storeData[id]) storeData[id] = { balance: 0, history: [] }; Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value }); db.ref('harishData').set(storeData).then(() => alert("Saved!")); }
         function downloadExcelBackup() { const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance }))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Backup.xlsx"); }
         function generateSummaryPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Market Report", 14, 15); doc.autoTable({ head: [['Shop', 'ID', 'Balance']], body: Object.keys(storeData).map(id => [storeData[id].shopName, id, storeData[id].balance]) }); doc.save("Market_Report.pdf"); }
+        function previewImg(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = f => { const img = new Image(); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if(w > 1200){ h *= 1200/w; w = 1200; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h); currentImg = canvas.toDataURL('image/jpeg', 0.6); }; img.src = f.target.result; }; reader.readAsDataURL(file); }
     </script>
 </body>
 </html>

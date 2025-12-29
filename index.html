@@ -12,7 +12,7 @@
 
     <style>
         :root { --primary: #3b82f6; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --glass: rgba(255, 255, 255, 0.05); }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top right, #1e293b, #020617); color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top right, #1e293b, #020617); color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; position: relative; }
         .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; width: 100%; max-width: 650px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); margin-bottom: 20px; }
         .grand-total-box { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
         .tab-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; flex: 1; font-size: 11px; margin: 2px; }
@@ -26,16 +26,27 @@
         .ledger-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; }
         .profile-badge { background: rgba(59, 130, 246, 0.2); padding: 15px; border-radius: 10px; font-size: 14px; margin-bottom: 15px; line-height: 1.6; }
         .bill-thumbnail { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
         .staff-list-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
         .staff-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px; }
         .del-icon { cursor: pointer; color: var(--danger); font-size: 14px; background: none; border: none; padding: 5px; }
         .staff-activity { font-size: 10px; opacity: 0.8; line-height: 1.4; }
+
+        /* REFRESH BUTTON STYLE */
+        .refresh-btn { 
+            position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; 
+            border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; 
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .refresh-btn:hover { background: var(--primary); transform: rotate(90deg); }
     </style>
 </head>
 <body>
+
+    <button class="refresh-btn" onclick="location.reload()" title="Refresh Data">🔄</button>
 
     <div id="loader">Processing...</div>
     <h2 style="letter-spacing: 2px;">👞 HARISH FOOTWEAR</h2>
@@ -125,7 +136,7 @@
         <div class="profile-badge" id="u-profile-details"></div>
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">Update Shop</button>
+            <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
             <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
             <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
         </div>
@@ -215,18 +226,16 @@
             document.getElementById('staff-management-list').innerHTML = h || "<p style='font-size:11px; opacity:0.6'>No staff added.</p>";
         }
 
-        // --- PDF GENERATOR (NEW CUSTOM THEME) ---
+        // --- PDF GENERATOR (CUSTOM THEME) ---
         function generateRetailerPDF(id) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const u = storeData[id];
 
-            // 1. Header Title
             doc.setFontSize(22);
             doc.setTextColor(59, 130, 246);
             doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
 
-            // 2. Condensed Retailer Detail Header (2-3 lines)
             doc.setFontSize(10);
             doc.setTextColor(0);
             doc.text(`Shop: ${u.shopName} | Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 25);
@@ -234,7 +243,6 @@
             doc.setDrawColor(200);
             doc.line(14, 33, 196, 33);
 
-            // 3. New Table Sequence: Credit & Payment columns
             let totalCredit = 0;
             let totalPayment = 0;
             const hist = u.history || [];
@@ -243,13 +251,7 @@
                 const isCredit = i.type === 'Credit';
                 const amt = parseFloat(i.amt) || 0;
                 if(isCredit) totalCredit += amt; else totalPayment += amt;
-
-                return [
-                    i.date,
-                    i.note || '-',
-                    isCredit ? `Rs. ${amt}` : '-',
-                    !isCredit ? `Rs. ${amt}` : '-'
-                ];
+                return [i.date, i.note || '-', isCredit ? `Rs. ${amt}` : '-', !isCredit ? `Rs. ${amt}` : '-'];
             });
 
             doc.autoTable({
@@ -260,14 +262,11 @@
                 columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
             });
 
-            // 4. Mathematical Summary at Bottom
             const finalY = doc.lastAutoTable.finalY + 10;
             doc.setFontSize(11);
             doc.setFont(undefined, 'bold');
             doc.text(`Total Credit (+): Rs. ${totalCredit}`, 196, finalY, { align: 'right' });
             doc.text(`Total Payment (-): Rs. ${totalPayment}`, 196, finalY + 6, { align: 'right' });
-            
-            // Final Outstanding
             doc.setFontSize(14);
             doc.setTextColor(239, 68, 68);
             doc.text(`Total Outstanding Balance: Rs. ${u.balance}`, 196, finalY + 15, { align: 'right' });
@@ -275,7 +274,6 @@
             doc.save(`${u.shopName}_Statement.pdf`);
         }
 
-        // --- NAVIGATION ---
         function switchTab(tab) {
             document.querySelectorAll('#admin-main-web > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + tab).classList.remove('hidden');
@@ -364,8 +362,13 @@
         function selectRetailer(id, name) { document.getElementById('search-retailer-input').value = name; document.getElementById('selected-retailer-id').value = id; document.getElementById('retailer-dropdown-list').style.display = 'none'; }
         function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
         function updateTotal() { let t = 0; for(let id in storeData) t += storeData[id].balance; document.getElementById('grand-total-display').innerText = "₹" + t.toLocaleString('en-IN'); }
-        function downloadExcelBackup() { const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance }))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Backup.xlsx"); }
-        function generateSummaryPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Market Report", 14, 15); doc.autoTable({ head: [['Shop', 'ID', 'Balance']], body: Object.keys(storeData).map(id => [storeData[id].shopName, id, storeData[id].balance]) }); doc.save("Market_Report.pdf"); }
+        function downloadExcelBackup() {
+            const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance })));
+            const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Backup.xlsx");
+        }
+        function generateSummaryPDF() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Market Report", 14, 15); doc.autoTable({ head: [['Shop', 'ID', 'Balance']], body: Object.keys(storeData).map(id => [storeData[id].shopName, id, storeData[id].balance]) }); doc.save("Market_Report.pdf");
+        }
     </script>
 </body>
 </html>

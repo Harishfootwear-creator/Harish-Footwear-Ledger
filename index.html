@@ -11,20 +11,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
-        :root {
-            --primary: #3b82f6; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --glass: rgba(255, 255, 255, 0.05);
-        }
-        body {
-            margin: 0; font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at top right, #1e293b, #020617);
-            color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center;
-        }
-        .glass-card {
-            background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px; padding: 25px; width: 100%; max-width: 650px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); margin-bottom: 20px;
-        }
+        :root { --primary: #3b82f6; --danger: #ef4444; --success: #10b981; --warning: #f59e0b; --glass: rgba(255, 255, 255, 0.05); }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top right, #1e293b, #020617); color: white; min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; width: 100%; max-width: 650px; box-shadow: 0 20px 50px rgba(0,0,0,0.4); margin-bottom: 20px; }
         .grand-total-box { background: rgba(59, 130, 246, 0.1); border: 1px solid var(--primary); padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
-        .tab-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; flex: 1; font-size: 11px; margin: 2px; }
+        .tab-btn { background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 8px; cursor: pointer; flex: 1; font-size: 10px; margin: 2px; }
         .active-tab { background: var(--primary); font-weight: bold; }
         input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: white; box-sizing: border-box; }
         .btn-action { width: 100%; padding: 14px; border: none; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.3s; }
@@ -33,18 +24,10 @@
         .amt-pos { color: var(--danger); font-weight: bold; }
         .amt-neg { color: var(--success); font-weight: bold; }
         .ledger-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; }
-        .profile-badge { background: rgba(59, 130, 246, 0.2); padding: 15px; border-radius: 10px; font-size: 14px; margin-bottom: 15px; line-height: 1.6; }
         .bill-thumbnail { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-        .search-select-container { position: relative; margin: 10px 0; }
+        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .dropdown-item:hover { background: var(--primary); }
-        
-        #loader { 
-            position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; 
-            padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; 
-            display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
     </style>
 </head>
 <body>
@@ -56,10 +39,23 @@
         <h3 style="text-align: center; color: var(--warning);">Administrator Login</h3>
         <input type="text" id="admin-id-input" placeholder="Admin ID">
         <input type="password" id="admin-pass-input" placeholder="Admin Password">
-        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login to Admin Panel</button>
+        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login</button>
     </div>
 
-    <div id="admin-main-web" class="glass-card hidden">
+    <div id="staff-login-gate" class="glass-card hidden">
+        <h3 style="text-align: center; color: var(--success);">Staff Login Portal</h3>
+        <input type="text" id="staff-id-input" placeholder="Staff ID">
+        <input type="password" id="staff-pass-input" placeholder="Staff Password">
+        <button class="btn-action" style="background: var(--success);" onclick="unlockStaff()">Login to Staff Portal</button>
+    </div>
+
+    <div id="login-section" class="glass-card">
+        <h3 style="text-align: center;">Retailer Login</h3>
+        <input type="text" id="login-id" placeholder="ID"><input type="password" id="login-pass" placeholder="Password">
+        <button class="btn-action" style="background: var(--primary);" onclick="handleLogin()">Login</button>
+    </div>
+
+    <div id="main-web-portal" class="glass-card hidden">
         <div class="grand-total-box">
             <span style="opacity: 0.7; font-size: 12px;">TOTAL MARKET OUTSTANDING</span>
             <div id="grand-total-display" style="font-size: 30px; font-weight: 800; color: var(--warning);">₹0</div>
@@ -68,17 +64,19 @@
         <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
             <button class="tab-btn active-tab" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
             <button class="tab-btn" id="t3" onclick="switchTab('manage')">🗂️ Manage</button>
-            <button class="tab-btn" id="t1" onclick="switchTab('add-retailer')">➕ New Shop</button>
-            <button class="tab-btn" id="t4" onclick="switchTab('reports')">📊 Reports</button>
+            <button class="tab-btn admin-only" id="t1" onclick="switchTab('add-retailer')">➕ New Shop</button>
+            <button class="tab-btn admin-only" id="t5" onclick="switchTab('add-staff')">👥 New Staff</button>
+            <button class="tab-btn admin-only" id="t4" onclick="switchTab('reports')">📊 Reports</button>
         </div>
 
         <div id="sec-add-bill">
             <h4>New Transaction</h4>
             <div class="search-select-container">
-                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name / ID" onfocus="showDropdown()" onkeyup="filterDropdown()">
+                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name" onfocus="showDropdown()" onkeyup="filterDropdown()">
                 <div id="retailer-dropdown-list"></div><input type="hidden" id="selected-retailer-id">
             </div>
-            <div style="display: flex; gap: 10px;"><input type="number" id="bill-amount" placeholder="Amount ₹"><input type="date" id="bill-date"></div>
+            <input type="number" id="bill-amount" placeholder="Amount ₹">
+            <input type="date" id="bill-date">
             <select id="bill-type"><option value="Credit">Credit Sale (+)</option><option value="Payment">Payment Received (-)</option></select>
             <input type="text" id="bill-note" placeholder="Note"><input type="file" id="bill-file" accept="image/*" capture="environment" onchange="previewImg(event)">
             <button class="btn-action" style="background: var(--primary);" onclick="saveBill()">Save Transaction</button>
@@ -89,45 +87,45 @@
             <div id="retailer-list-container"></div>
         </div>
 
-        <div id="sec-add-retailer" class="hidden">
-            <h4 id="form-title">Retailer Registration</h4>
-            <input type="hidden" id="edit-mode-id">
-            <input type="text" id="reg-id" placeholder="Assign Login ID">
+        <div id="sec-add-retailer" class="hidden admin-only">
+            <h4>Retailer Registration</h4>
+            <input type="text" id="reg-id" placeholder="ID">
             <input type="text" id="reg-pass" placeholder="Password">
             <input type="text" id="reg-shop" placeholder="Shop Name">
             <input type="text" id="reg-name" placeholder="Owner Name">
-            <input type="tel" id="reg-mobile" placeholder="Mobile 1">
-            <textarea id="reg-address" placeholder="Address" rows="2"></textarea>
-            <button id="reg-btn" class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
-            <button id="cancel-edit-btn" class="btn-action hidden" style="background: #475569;" onclick="cancelEdit()">Cancel Edit</button>
+            <input type="tel" id="reg-mobile" placeholder="Mobile">
+            <textarea id="reg-address" placeholder="Address"></textarea>
+            <button class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Shop</button>
         </div>
 
-        <div id="sec-reports" class="hidden">
-            <button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup (.xlsx)</button>
-            <button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Full Outstanding PDF</button>
+        <div id="sec-add-staff" class="hidden admin-only">
+            <h4>Staff Creation</h4>
+            <input type="text" id="stf-id" placeholder="Staff Username">
+            <input type="text" id="stf-pass" placeholder="Staff Password">
+            <button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Staff Access</button>
+            <div id="staff-list-display" style="margin-top:15px; font-size:12px; opacity:0.8;"></div>
+        </div>
+
+        <div id="sec-reports" class="hidden admin-only">
+            <button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button>
+            <button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button>
         </div>
     </div>
 
     <div id="dashboard-section" class="glass-card hidden">
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
             <div><h2 id="u-shop" style="margin:0;"></h2><div id="u-id-display" style="font-size: 12px; opacity: 0.6;"></div></div>
-            <button class="tab-btn" style="max-width: 80px;" onclick="goBack()">Back</button>
+            <button class="tab-btn" style="max-width: 60px;" onclick="goBack()">Back</button>
         </div>
         <div class="profile-badge" id="u-profile-details"></div>
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button id="edit-profile-btn" class="btn-action hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
+        <div style="display: flex; gap: 8px;">
+            <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">Update Shop</button>
             <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
-            <button id="wa-btn" class="btn-action" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
+            <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
         </div>
         <h4 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">Transactions History</h4>
         <div id="u-history"></div>
-    </div>
-
-    <div id="login-section" class="glass-card">
-        <h3 style="text-align: center;">Retailer Login</h3>
-        <input type="text" id="login-id" placeholder="ID"><input type="password" id="login-pass" placeholder="Password">
-        <button class="btn-action" style="background: var(--primary);" onclick="handleLogin()">Login</button>
     </div>
 
     <script>
@@ -140,128 +138,113 @@
             appId: "1:655271008330:web:d820817a5154a8dd5c2eb3",
             databaseURL: "https://harish-footwear-ledger-default-rtdb.asia-southeast1.firebasedatabase.app"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let storeData = {}; 
-        let currentImg = "";
-        let adminAuthenticated = false;
+        let storeData = {}; let staffData = {};
+        let currentImg = ""; let userRole = "retailer";
 
-        function toggleLoader(show, text = "Processing...") {
-            const loader = document.getElementById('loader');
-            loader.innerText = text;
-            loader.style.display = show ? 'block' : 'none';
-        }
-
-        db.ref('harishData').on('value', (snapshot) => {
-            const cloudData = snapshot.val();
-            if (cloudData) {
-                storeData = cloudData;
-                updateTotal();
-                if(!document.getElementById('sec-manage').classList.contains('hidden')) searchRetailers();
-            }
+        // --- 1. LIVE CLOUD SYNC ---
+        db.ref('harishData').on('value', snap => { storeData = snap.val() || {}; updateTotal(); });
+        db.ref('staffUsers').on('value', snap => { 
+            staffData = snap.val() || {}; 
+            let h = "Current Staff: "; for(let s in staffData) h += s + ", ";
+            document.getElementById('staff-list-display').innerText = h;
         });
 
         function saveAndSync() {
-            toggleLoader(true, "Syncing Cloud...");
-            db.ref('harishData').set(storeData)
-              .then(() => toggleLoader(false))
-              .catch((err) => { toggleLoader(false); alert("Sync Failed: " + err.message); });
+            document.getElementById('loader').style.display = 'block';
+            db.ref('harishData').set(storeData).then(() => document.getElementById('loader').style.display = 'none');
         }
 
-        function generateRetailerPDF(id) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const u = storeData[id];
-
-            doc.setFontSize(20);
-            doc.setTextColor(59, 130, 246);
-            doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
-
-            doc.setFontSize(10);
-            doc.setTextColor(0);
-            doc.text(`Shop: ${u.shopName} | ID: ${id} | Password: ${u.pass}`, 14, 25);
-            doc.text(`Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 30);
-            doc.text(`Address: ${u.address || 'N/A'}`, 14, 35);
-            doc.setDrawColor(200);
-            doc.line(14, 38, 196, 38);
-
-            let totalCredit = 0;
-            let totalPayment = 0;
-            const hist = u.history || [];
-
-            const tableBody = hist.map(i => {
-                const isCredit = i.type === 'Credit';
-                const amt = parseFloat(i.amt) || 0;
-                if(isCredit) totalCredit += amt; else totalPayment += amt;
-                return [i.date, i.note || '-', isCredit ? `Rs. ${amt}` : '-', !isCredit ? `Rs. ${amt}` : '-'];
-            });
-
-            doc.autoTable({
-                startY: 42,
-                head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']],
-                body: tableBody,
-                headStyles: { fillColor: [59, 130, 246] },
-                columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
-            });
-
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(11);
-            doc.text(`Total Credit (+): Rs. ${totalCredit}`, 196, finalY, { align: 'right' });
-            doc.text(`Total Payment (-): Rs. ${totalPayment}`, 196, finalY + 7, { align: 'right' });
-            
-            doc.setFontSize(13);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(239, 68, 68);
-            doc.text(`Total Outstanding Balance: Rs. ${u.balance}`, 196, finalY + 16, { align: 'right' });
-
-            doc.save(`${u.shopName}_Statement.pdf`);
-        }
-
+        // --- 2. AUTHENTICATION LOGIC ---
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === 'true') {
             document.getElementById('admin-login-gate').classList.remove('hidden');
+            document.getElementById('login-section').classList.add('hidden');
+        } else if (urlParams.get('staff') === 'true') {
+            document.getElementById('staff-login-gate').classList.remove('hidden');
             document.getElementById('login-section').classList.add('hidden');
         }
 
         function unlockAdmin() {
             if (document.getElementById('admin-id-input').value === "aditya" && 
                 document.getElementById('admin-pass-input').value === "aditya9050") {
-                adminAuthenticated = true;
+                userRole = "admin";
                 document.getElementById('admin-login-gate').classList.add('hidden');
-                document.getElementById('admin-main-web').classList.remove('hidden');
-                updateTotal();
-            } else { alert("Wrong Credentials"); }
+                document.getElementById('main-web-portal').classList.remove('hidden');
+            } else { alert("Wrong Admin Credentials"); }
         }
 
+        function unlockStaff() {
+            const id = document.getElementById('staff-id-input').value;
+            const pass = document.getElementById('staff-pass-input').value;
+            if (staffData[id] && staffData[id] === pass) {
+                userRole = "staff";
+                document.getElementById('staff-login-gate').classList.add('hidden');
+                document.getElementById('main-web-portal').classList.remove('hidden');
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+            } else { alert("Invalid Staff Login"); }
+        }
+
+        function handleLogin() {
+            const id = document.getElementById('login-id').value; const p = document.getElementById('login-pass').value;
+            if(storeData[id] && storeData[id].pass === p) { userRole = "retailer"; showUser(id); } else alert("Invalid");
+        }
+
+        // --- 3. STAFF MANAGEMENT (ADMIN ONLY) ---
+        function registerStaff() {
+            const id = document.getElementById('stf-id').value;
+            const pass = document.getElementById('stf-pass').value;
+            if(!id || !pass) return alert("Fields Required");
+            db.ref('staffUsers/' + id).set(pass).then(() => alert("Staff Member Created!"));
+            document.getElementById('stf-id').value = ""; document.getElementById('stf-pass').value = "";
+        }
+
+        // --- 4. NAVIGATION & RENDERERS ---
         function switchTab(tab) {
-            document.querySelectorAll('#admin-main-web > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('#main-web-portal > div[id^="sec-"]').forEach(s => s.classList.add('hidden'));
             document.getElementById('sec-' + tab).classList.remove('hidden');
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
-            const btnMap = { 'add-retailer': 't1', 'add-bill': 't2', 'manage': 't3', 'reports': 't4' };
-            if(btnMap[tab]) document.getElementById(btnMap[tab]).classList.add('active-tab');
+            const btnMap = { 'add-retailer': 't1', 'add-bill': 't2', 'manage': 't3', 'reports': 't4', 'add-staff': 't5' };
+            document.getElementById(btnMap[tab]).classList.add('active-tab');
             if(tab === 'manage') searchRetailers();
         }
 
         function goBack() {
             document.getElementById('dashboard-section').classList.add('hidden');
-            if(adminAuthenticated) document.getElementById('admin-main-web').classList.remove('hidden');
+            if(userRole === "admin" || userRole === "staff") document.getElementById('main-web-portal').classList.remove('hidden');
             else document.getElementById('login-section').classList.remove('hidden');
         }
 
+        function showUser(id) {
+            const u = storeData[id];
+            document.getElementById('main-web-portal').classList.add('hidden');
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('u-shop').innerText = u.shopName;
+            document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
+            
+            if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            
+            const hist = u.history || [];
+            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div>`).join('');
+            
+            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
+            document.getElementById('wa-btn').onclick = () => {
+                const message = `Hello ${u.shopName}, your outstanding balance with Harish Footwear is ₹${u.balance}. Portal: https://harishfootwear-creator.github.io/Harish-Footwear-Ledger`;
+                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(message)}`);
+            };
+        }
+
+        // --- 5. CORE OPERATIONS (ADMIN/STAFF) ---
         function registerRetailer() {
             const id = document.getElementById('reg-id').value;
             if(!id) return alert("ID Required");
             if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
-            Object.assign(storeData[id], {
-                shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value,
-                mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value,
-                pass: document.getElementById('reg-pass').value
-            });
-            saveAndSync();
-            alert("Retailer Saved!");
-            switchTab('manage');
+            Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value });
+            saveAndSync(); alert("Shop Saved!"); switchTab('manage');
         }
 
         function saveBill() {
@@ -271,72 +254,37 @@
             if(!id || amt <= 0) return alert("Details missing");
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
-            storeData[id].history.unshift({
-                date: document.getElementById('bill-date').value || new Date().toLocaleDateString(),
-                type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg
-            });
-            saveAndSync();
-            alert("Transaction Saved!");
-            document.getElementById('bill-amount').value = "";
-            document.getElementById('search-retailer-input').value = "";
-            currentImg = "";
-            updateTotal();
+            storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg });
+            saveAndSync(); alert("Saved!"); document.getElementById('bill-amount').value = "";
+        }
+
+        // --- UTILS ---
+        function previewImg(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = f => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height; if(w > 1200){ h *= 1200/w; w = 1200; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    currentImg = canvas.toDataURL('image/jpeg', 0.7);
+                };
+                img.src = f.target.result;
+            };
+            reader.readAsDataURL(file);
         }
 
         function searchRetailers() {
             const q = document.getElementById('admin-search').value.toLowerCase();
-            const container = document.getElementById('retailer-list-container');
             let h = "";
             for(let id in storeData) {
-                const u = storeData[id];
-                if(id.includes(q) || u.shopName.toLowerCase().includes(q)) {
-                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${u.shopName}</b><span class="${u.balance >= 0 ? 'amt-pos' : 'amt-neg'}">₹${u.balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
+                if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) {
+                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span>₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
                 }
             }
-            container.innerHTML = h;
-        }
-
-        function showUser(id) {
-            const u = storeData[id];
-            document.getElementById('admin-main-web').classList.add('hidden');
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('dashboard-section').classList.remove('hidden');
-            document.getElementById('u-shop').innerText = u.shopName;
-            document.getElementById('u-id-display').innerText = "Account ID: " + id;
-            document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
-            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Address:</b> ${u.address}`;
-            if(adminAuthenticated) document.getElementById('edit-profile-btn').classList.remove('hidden');
-            const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div style="display:flex; justify-content:space-between"><div><b>${i.note || i.type}</b><br><small>${i.date}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">${i.type === 'Credit' ? '+' : '-'} ₹${i.amt}</b></div></div>`).join('');
-            
-            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-            
-            document.getElementById('wa-btn').onclick = () => {
-                const portalLink = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
-                const message = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portalLink}`;
-                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(message)}`);
-            };
-        }
-
-        function previewImg(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            toggleLoader(true, "Compressing...");
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const img = new Image();
-                img.onload = function () {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width, height = img.height;
-                    if (width > 1200) { height *= 1200 / width; width = 1200; }
-                    canvas.width = width; canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    currentImg = canvas.toDataURL('image/jpeg', 0.7); 
-                    toggleLoader(false);
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            document.getElementById('retailer-list-container').innerHTML = h;
         }
 
         function filterDropdown() {
@@ -347,9 +295,9 @@
         }
         function selectRetailer(id, name) { document.getElementById('search-retailer-input').value = name; document.getElementById('selected-retailer-id').value = id; document.getElementById('retailer-dropdown-list').style.display = 'none'; }
         function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
-        function handleLogin() { const id = document.getElementById('login-id').value, p = document.getElementById('login-pass').value; if(storeData[id] && storeData[id].pass === p) showUser(id); else alert("Invalid Login"); }
-        function updateTotal() { let t = 0; for(let id in storeData) t += storeData[id].balance; const disp = document.getElementById('grand-total-display'); if(disp) disp.innerText = "₹" + t.toLocaleString('en-IN'); }
-        function downloadExcelBackup() { const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance }))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Harish_Backup.xlsx"); }
+        function updateTotal() { let t = 0; for(let id in storeData) t += storeData[id].balance; document.getElementById('grand-total-display').innerText = "₹" + t.toLocaleString('en-IN'); }
+        function generateRetailerPDF(id) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Statement: " + storeData[id].shopName, 14, 15); doc.autoTable({ head: [['Date', 'Type', 'Amount']], body: (storeData[id].history || []).map(i => [i.date, i.type, i.amt]) }); doc.save("Statement.pdf"); }
+        function downloadExcelBackup() { const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance }))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Backup.xlsx"); }
         function generateSummaryPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Outstanding Report", 14, 15); doc.autoTable({ head: [['Shop', 'ID', 'Balance']], body: Object.keys(storeData).map(id => [storeData[id].shopName, id, storeData[id].balance]) }); doc.save("Report.pdf"); }
     </script>
 </body>

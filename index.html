@@ -26,17 +26,27 @@
         .amt-neg { color: var(--success); font-weight: bold; }
         .ledger-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; }
         .bill-thumbnail { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
+        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .refresh-btn { position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; backdrop-filter: blur(5px); }
-        .staff-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
-        .del-stf { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 16px; float: right; }
+        .staff-list-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .staff-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px; }
+        .del-icon { cursor: pointer; color: var(--danger); font-size: 14px; background: none; border: none; padding: 5px; }
+        .staff-activity { font-size: 10px; opacity: 0.8; line-height: 1.4; }
+
+        .refresh-btn { 
+            position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); 
+            border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; 
+            border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; 
+            backdrop-filter: blur(5px); transition: 0.3s;
+        }
+        .refresh-btn:hover { background: var(--primary); transform: rotate(90deg); }
     </style>
 </head>
 <body>
 
     <button class="refresh-btn" onclick="location.reload()" title="Refresh Data">🔄</button>
+
     <div id="loader">Processing...</div>
     <h2 style="letter-spacing: 2px;">👞 HARISH FOOTWEAR</h2>
 
@@ -44,21 +54,21 @@
         <h3 style="text-align: center; color: var(--warning);">Administrator Login</h3>
         <input type="text" id="admin-id-input" placeholder="Admin ID">
         <input type="password" id="admin-pass-input" placeholder="Admin Password">
-        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login</button>
+        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login to Admin Panel</button>
     </div>
 
     <div id="staff-login-gate" class="glass-card hidden">
         <h3 style="text-align: center; color: var(--success);">Staff Login</h3>
         <input type="text" id="staff-id-input" placeholder="Staff ID">
         <input type="password" id="staff-pass-input" placeholder="Staff Password">
-        <button class="btn-action" style="background: var(--success);" onclick="unlockStaff()">Login</button>
+        <button class="btn-action" style="background: var(--success);" onclick="unlockStaff()">Login to Staff Portal</button>
     </div>
 
     <div id="login-section" class="glass-card">
         <h3 style="text-align: center;">Retailer Login</h3>
         <input type="text" id="login-id" placeholder="ID"><input type="password" id="login-pass" placeholder="Password">
         <button class="btn-action" style="background: var(--primary);" onclick="handleLogin()">Login</button>
-        <button class="btn-action" style="background: transparent; border: 1px solid gray; font-size: 10px; margin-top: 20px;" onclick="logout()">Logout / Switch User</button>
+        <button class="btn-action" style="background: transparent; border: 1px solid gray; font-size: 10px; margin-top: 20px;" onclick="logout()">Logout / Clear Session</button>
     </div>
 
     <div id="admin-main-web" class="glass-card hidden">
@@ -66,6 +76,7 @@
             <span style="opacity: 0.7; font-size: 12px;">TOTAL MARKET OUTSTANDING</span>
             <div id="grand-total-display" style="font-size: 30px; font-weight: 800; color: var(--warning);">₹0</div>
         </div>
+
         <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
             <button class="tab-btn active-tab" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
             <button class="tab-btn" id="t3" onclick="switchTab('manage')">🗂️ Manage</button>
@@ -73,10 +84,11 @@
             <button class="tab-btn admin-only" id="t5" onclick="switchTab('add-staff')">👥 New Staff</button>
             <button class="tab-btn admin-only" id="t4" onclick="switchTab('reports')">📊 Reports</button>
         </div>
+
         <div id="sec-add-bill">
             <h4>New Transaction</h4>
             <div class="search-select-container">
-                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name" onfocus="showDropdown()" onkeyup="filterDropdown()">
+                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name / ID" onfocus="showDropdown()" onkeyup="filterDropdown()">
                 <div id="retailer-dropdown-list"></div><input type="hidden" id="selected-retailer-id">
             </div>
             <div style="display: flex; gap: 10px;"><input type="number" id="bill-amount" placeholder="Amount ₹"><input type="date" id="bill-date"></div>
@@ -84,18 +96,36 @@
             <input type="text" id="bill-note" placeholder="Note"><input type="file" id="bill-file" accept="image/*" capture="environment" onchange="previewImg(event)">
             <button class="btn-action" style="background: var(--primary);" onclick="saveBill()">Save Transaction</button>
         </div>
-        <div id="sec-manage" class="hidden"><input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()"><div id="retailer-list-container"></div></div>
+
+        <div id="sec-manage" class="hidden">
+            <input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()">
+            <div id="retailer-list-container"></div>
+        </div>
+
         <div id="sec-add-retailer" class="hidden admin-only">
             <h4>Retailer Registration</h4>
-            <input type="text" id="reg-id" placeholder="ID"><input type="text" id="reg-pass" placeholder="Password"><input type="text" id="reg-shop" placeholder="Shop Name"><input type="text" id="reg-name" placeholder="Owner Name"><input type="tel" id="reg-mobile" placeholder="Mobile"><textarea id="reg-address" placeholder="Address"></textarea><button class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
+            <input type="text" id="reg-id" placeholder="ID">
+            <input type="text" id="reg-pass" placeholder="Password">
+            <input type="text" id="reg-shop" placeholder="Shop Name">
+            <input type="text" id="reg-name" placeholder="Owner Name">
+            <input type="tel" id="reg-mobile" placeholder="Mobile">
+            <textarea id="reg-address" placeholder="Address"></textarea>
+            <button class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
         </div>
+
         <div id="sec-add-staff" class="hidden admin-only">
             <h4>Staff Management</h4>
-            <input type="text" id="stf-id" placeholder="Staff ID"><input type="text" id="stf-pass" placeholder="Staff Password"><button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Account</button>
+            <input type="text" id="stf-id" placeholder="Staff ID">
+            <input type="text" id="stf-pass" placeholder="Staff Password">
+            <button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Account</button>
             <h5 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">Existing Staff Activity</h5>
             <div id="staff-management-list"></div>
         </div>
-        <div id="sec-reports" class="hidden admin-only"><button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button><button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button></div>
+
+        <div id="sec-reports" class="hidden admin-only">
+            <button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button>
+            <button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button>
+        </div>
     </div>
 
     <div id="dashboard-section" class="glass-card hidden">
@@ -107,8 +137,8 @@
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
-            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">PDF Statement</button>
-            <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">WhatsApp</button>
+            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
+            <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
         </div>
         <h4 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">Transactions History</h4>
         <div id="u-history"></div>
@@ -122,8 +152,7 @@
 
         function sendEmailAlert(type, user) {
             const templateParams = {
-                message: `Security Update: A ${type} login attempt was made by user: ${user}.`,
-                time: new Date().toLocaleString(),
+                message: `Security Update: A ${type} login attempt was made by user: ${user} at ${new Date().toLocaleString()}.`,
                 to_email: "pg531381@gmail.com"
             };
             emailjs.send('service_j2gypmw', 'YOUR_TEMPLATE_ID', templateParams);
@@ -178,7 +207,7 @@
                 document.getElementById('staff-login-gate').classList.add('hidden');
                 document.getElementById('admin-main-web').classList.remove('hidden');
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-            } else { if(!isAuto) { sendEmailAlert("FAILED", "STAFF: " + id); alert("Invalid"); } }
+            } else { if(!isAuto) { sendEmailAlert("FAILED", "STAFF ID: " + id); alert("Invalid"); } }
         }
 
         function handleLogin() {
@@ -192,7 +221,7 @@
 
         function logout() { sessionStorage.clear(); location.reload(); }
 
-        // --- PDF GENERATOR (FINANCIAL THEME) ---
+        // --- PDF GENERATOR (STRICTLY PRESERVED) ---
         function generateRetailerPDF(id) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF(); const u = storeData[id];
             doc.setFontSize(22); doc.setTextColor(59, 130, 246);
@@ -207,11 +236,13 @@
                 if(isC) tC += amt; else tP += amt;
                 return [i.date, i.note || '-', isC ? `Rs. ${amt}` : '-', !isC ? `Rs. ${amt}` : '-'];
             });
-            doc.autoTable({ startY: 37, head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']], body: body, headStyles: { fillColor: [59, 130, 246] } });
+            doc.autoTable({ startY: 37, head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']], body: body, headStyles: { fillColor: [59, 130, 246] }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } } });
             const fY = doc.lastAutoTable.finalY + 10;
+            doc.setFont(undefined, 'bold');
             doc.text(`Total Credit: Rs. ${tC}`, 196, fY, { align: 'right' });
             doc.text(`Total Payment: Rs. ${tP}`, 196, fY + 6, { align: 'right' });
-            doc.setTextColor(239, 68, 68); doc.text(`Outstanding: Rs. ${u.balance}`, 196, fY + 15, { align: 'right' });
+            doc.setTextColor(239, 68, 68); doc.setFontSize(14);
+            doc.text(`Outstanding: Rs. ${u.balance}`, 196, fY + 15, { align: 'right' });
             doc.save(`${u.shopName}.pdf`);
         }
 
@@ -223,31 +254,9 @@
                     const logs = (storeData[rId].history || []).filter(item => item.by === id);
                     if(logs.length > 0) activity.push(`${storeData[rId].shopName} (${logs.length})`);
                 }
-                h += `<div class="staff-card"><button class="del-stf" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button><b>${id}</b><div style="font-size:10px; opacity:0.7">Activity: ${activity.join(", ") || 'None'}</div></div>`;
+                h += `<div class="staff-list-item"><div class="staff-header"><b>ID: ${id}</b> <button class="del-icon" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button></div><div class="staff-activity">Activity: ${activity.join(", ") || 'None'}</div></div>`;
             }
-            document.getElementById('staff-management-list').innerHTML = h || "No staff.";
-        }
-
-        function showUser(id) {
-            const u = storeData[id]; if(!u) return;
-            document.getElementById('admin-main-web').classList.add('hidden');
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('dashboard-section').classList.remove('hidden');
-            document.getElementById('u-shop').innerText = u.shopName;
-            document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
-            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile}`;
-            if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-            const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b>₹${i.amt}</b></div>`).join('');
-            
-            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-
-            // UPDATED WHATSAPP LOGIC WITH ID/PASS
-            document.getElementById('wa-btn').onclick = () => {
-                const portal = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
-                const message = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portal} Login ID: ${id} Password: ${u.pass}`;
-                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(message)}`);
-            };
+            document.getElementById('staff-management-list').innerHTML = h || "No staff added.";
         }
 
         function switchTab(tab) {
@@ -257,6 +266,28 @@
             const btnMap = { 'add-retailer': 't1', 'add-bill': 't2', 'manage': 't3', 'reports': 't4', 'add-staff': 't5' };
             document.getElementById(btnMap[tab]).classList.add('active-tab');
             if(tab === 'manage') searchRetailers();
+        }
+
+        function showUser(id) {
+            const u = storeData[id]; if(!u) return;
+            document.getElementById('admin-main-web').classList.add('hidden');
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('u-shop').innerText = u.shopName;
+            document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Addr:</b> ${u.address}`;
+            if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+            const hist = u.history || [];
+            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
+            
+            document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
+
+            // UPDATED WHATSAPP LOGIC WITH CREDENTIALS
+            document.getElementById('wa-btn').onclick = () => {
+                const portal = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
+                const message = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portal} Login ID: ${id} Password: ${u.pass}`;
+                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(message)}`);
+            };
         }
 
         function saveBill() {

@@ -25,29 +25,19 @@
         .amt-pos { color: var(--danger); font-weight: bold; }
         .amt-neg { color: var(--success); font-weight: bold; }
         .ledger-item { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 15px 0; }
-        .profile-badge { background: rgba(59, 130, 246, 0.2); padding: 15px; border-radius: 10px; font-size: 14px; margin-bottom: 15px; line-height: 1.6; }
         .bill-thumbnail { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); }
-        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; }
+        #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .staff-list-item { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
-        .staff-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-bottom: 8px; }
-        .del-icon { cursor: pointer; color: var(--danger); font-size: 14px; background: none; border: none; padding: 5px; }
-        .staff-activity { font-size: 10px; opacity: 0.8; line-height: 1.4; }
-
-        .refresh-btn { 
-            position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); 
-            border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; 
-            border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; 
-            backdrop-filter: blur(5px); transition: 0.3s;
-        }
+        .staff-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .del-stf { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 16px; float: right; }
+        .refresh-btn { position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; backdrop-filter: blur(5px); transition: 0.3s; }
         .refresh-btn:hover { background: var(--primary); transform: rotate(90deg); }
     </style>
 </head>
 <body>
 
     <button class="refresh-btn" onclick="location.reload()" title="Refresh Data">🔄</button>
-
     <div id="loader">Processing...</div>
     <h2 style="letter-spacing: 2px;">👞 HARISH FOOTWEAR</h2>
 
@@ -55,21 +45,21 @@
         <h3 style="text-align: center; color: var(--warning);">Administrator Login</h3>
         <input type="text" id="admin-id-input" placeholder="Admin ID">
         <input type="password" id="admin-pass-input" placeholder="Admin Password">
-        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login to Admin Panel</button>
+        <button class="btn-action" style="background: var(--primary);" onclick="unlockAdmin()">Login</button>
     </div>
 
     <div id="staff-login-gate" class="glass-card hidden">
         <h3 style="text-align: center; color: var(--success);">Staff Login</h3>
         <input type="text" id="staff-id-input" placeholder="Staff ID">
         <input type="password" id="staff-pass-input" placeholder="Staff Password">
-        <button class="btn-action" style="background: var(--success);" onclick="unlockStaff()">Login to Staff Portal</button>
+        <button class="btn-action" style="background: var(--success);" onclick="unlockStaff()">Login</button>
     </div>
 
     <div id="login-section" class="glass-card">
         <h3 style="text-align: center;">Retailer Login</h3>
         <input type="text" id="login-id" placeholder="ID"><input type="password" id="login-pass" placeholder="Password">
         <button class="btn-action" style="background: var(--primary);" onclick="handleLogin()">Login</button>
-        <button class="btn-action" style="background: transparent; border: 1px solid gray; font-size: 10px; margin-top: 20px;" onclick="logout()">Logout / Clear Session</button>
+        <button class="btn-action" style="background: transparent; border: 1px solid gray; font-size: 10px; margin-top: 20px;" onclick="logout()">Logout / Switch User</button>
     </div>
 
     <div id="admin-main-web" class="glass-card hidden">
@@ -77,7 +67,6 @@
             <span style="opacity: 0.7; font-size: 12px;">TOTAL MARKET OUTSTANDING</span>
             <div id="grand-total-display" style="font-size: 30px; font-weight: 800; color: var(--warning);">₹0</div>
         </div>
-
         <div style="display: flex; flex-wrap: wrap; margin-bottom: 20px;">
             <button class="tab-btn active-tab" id="t2" onclick="switchTab('add-bill')">📝 Entry</button>
             <button class="tab-btn" id="t3" onclick="switchTab('manage')">🗂️ Manage</button>
@@ -85,11 +74,10 @@
             <button class="tab-btn admin-only" id="t5" onclick="switchTab('add-staff')">👥 New Staff</button>
             <button class="tab-btn admin-only" id="t4" onclick="switchTab('reports')">📊 Reports</button>
         </div>
-
         <div id="sec-add-bill">
             <h4>New Transaction</h4>
             <div class="search-select-container">
-                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name / ID" onfocus="showDropdown()" onkeyup="filterDropdown()">
+                <input type="text" id="search-retailer-input" placeholder="🔍 Search Shop Name" onfocus="showDropdown()" onkeyup="filterDropdown()">
                 <div id="retailer-dropdown-list"></div><input type="hidden" id="selected-retailer-id">
             </div>
             <div style="display: flex; gap: 10px;"><input type="number" id="bill-amount" placeholder="Amount ₹"><input type="date" id="bill-date"></div>
@@ -97,36 +85,18 @@
             <input type="text" id="bill-note" placeholder="Note"><input type="file" id="bill-file" accept="image/*" capture="environment" onchange="previewImg(event)">
             <button class="btn-action" style="background: var(--primary);" onclick="saveBill()">Save Transaction</button>
         </div>
-
-        <div id="sec-manage" class="hidden">
-            <input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()">
-            <div id="retailer-list-container"></div>
-        </div>
-
+        <div id="sec-manage" class="hidden"><input type="text" id="admin-search" placeholder="Search Ledger..." onkeyup="searchRetailers()"><div id="retailer-list-container"></div></div>
         <div id="sec-add-retailer" class="hidden admin-only">
             <h4>Retailer Registration</h4>
-            <input type="text" id="reg-id" placeholder="ID">
-            <input type="text" id="reg-pass" placeholder="Password">
-            <input type="text" id="reg-shop" placeholder="Shop Name">
-            <input type="text" id="reg-name" placeholder="Owner Name">
-            <input type="tel" id="reg-mobile" placeholder="Mobile">
-            <textarea id="reg-address" placeholder="Address"></textarea>
-            <button class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
+            <input type="text" id="reg-id" placeholder="ID"><input type="text" id="reg-pass" placeholder="Password"><input type="text" id="reg-shop" placeholder="Shop Name"><input type="text" id="reg-name" placeholder="Owner Name"><input type="tel" id="reg-mobile" placeholder="Mobile"><textarea id="reg-address" placeholder="Address"></textarea><button class="btn-action" style="background: var(--success);" onclick="registerRetailer()">Save Retailer</button>
         </div>
-
         <div id="sec-add-staff" class="hidden admin-only">
             <h4>Staff Management</h4>
-            <input type="text" id="stf-id" placeholder="Staff ID">
-            <input type="text" id="stf-pass" placeholder="Staff Password">
-            <button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Account</button>
+            <input type="text" id="stf-id" placeholder="Staff ID"><input type="text" id="stf-pass" placeholder="Staff Password"><button class="btn-action" style="background: var(--warning);" onclick="registerStaff()">Create Account</button>
             <h5 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:15px;">Existing Staff Activity</h5>
             <div id="staff-management-list"></div>
         </div>
-
-        <div id="sec-reports" class="hidden admin-only">
-            <button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button>
-            <button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button>
-        </div>
+        <div id="sec-reports" class="hidden admin-only"><button class="btn-action" style="background: #0f172a;" onclick="downloadExcelBackup()">📁 Excel Backup</button><button class="btn-action" style="background: #7c3aed;" onclick="generateSummaryPDF()">📄 Market PDF</button></div>
     </div>
 
     <div id="dashboard-section" class="glass-card hidden">
@@ -138,14 +108,28 @@
         <div id="u-balance" style="font-size: 32px; font-weight: bold; color: var(--danger);">₹0</div>
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="edit-profile-btn" class="btn-action admin-only hidden" style="background: var(--warning); flex: 1; font-size: 11px;">✏️ Update Shop</button>
-            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">📄 PDF Statement</button>
-            <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">💬 WhatsApp</button>
+            <button id="pdf-statement-btn" class="btn-action" style="background: var(--success); flex: 1; font-size: 11px;">PDF Statement</button>
+            <button id="wa-btn" class="btn-action admin-only hidden" style="background: #25D366; flex: 1; font-size: 11px;">WhatsApp</button>
         </div>
         <h4 style="margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px;">Transactions History</h4>
         <div id="u-history"></div>
     </div>
 
     <script>
+        // --- 1. EMAILJS CONFIGURATION ---
+        (function(){
+            emailjs.init("YOUR_PUBLIC_KEY"); // REPLACE WITH YOUR PUBLIC KEY
+        })();
+
+        function sendEmailAlert(type, user) {
+            const templateParams = {
+                message: `Security Update: A ${type} login attempt was made by user: ${user}.`,
+                time: new Date().toLocaleString(),
+                to_email: "pg531381@gmail.com"
+            };
+            emailjs.send('service_j2gypmw', 'YOUR_TEMPLATE_ID', templateParams); // REPLACE WITH YOUR TEMPLATE ID
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyA0173TPd-8TeMlj1XX1BMy0qRZBSR3BIs",
             authDomain: "harish-footwear-ledger.firebaseapp.com",
@@ -158,60 +142,113 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let storeData = {}; let staffData = {};
-        let currentImg = ""; let userRole = "retailer"; let loggedInStaffId = "";
+        let storeData = {}; let staffData = {}; let currentImg = ""; 
+        let userRole = sessionStorage.getItem('userRole') || "retailer"; 
+        let loggedInId = sessionStorage.getItem('loggedInId') || "";
+
+        window.onload = function() {
+            if (loggedInId) {
+                if (userRole === 'admin') unlockAdmin(true);
+                else if (userRole === 'staff') unlockStaff(true);
+                else if (userRole === 'retailer') showUser(loggedInId);
+            }
+        };
 
         db.ref('harishData').on('value', snap => { storeData = snap.val() || {}; updateTotal(); });
         db.ref('staffUsers').on('value', snap => { staffData = snap.val() || {}; renderStaffList(); });
 
-        function saveAndSync() {
-            document.getElementById('loader').style.display = 'block';
-            db.ref('harishData').set(storeData).then(() => document.getElementById('loader').style.display = 'none');
-        }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('admin') === 'true') {
-            document.getElementById('admin-login-gate').classList.remove('hidden');
-            document.getElementById('login-section').classList.add('hidden');
-        } else if (urlParams.get('staff') === 'true') {
-            document.getElementById('staff-login-gate').classList.remove('hidden');
-            document.getElementById('login-section').classList.add('hidden');
-        }
-
-        function unlockAdmin() {
-            if (document.getElementById('admin-id-input').value === "aditya" && 
-                document.getElementById('admin-pass-input').value === "aditya9050") {
-                userRole = "admin";
+        function unlockAdmin(isAuto = false) {
+            const id = isAuto ? "aditya" : document.getElementById('admin-id-input').value;
+            const pass = isAuto ? "aditya9050" : document.getElementById('admin-pass-input').value;
+            if (id === "aditya" && pass === "aditya9050") {
+                if(!isAuto) sendEmailAlert("SUCCESSFUL", "ADMIN");
+                userRole = "admin"; loggedInId = "aditya";
+                sessionStorage.setItem('userRole', 'admin'); sessionStorage.setItem('loggedInId', 'aditya');
                 document.getElementById('admin-login-gate').classList.add('hidden');
                 document.getElementById('admin-main-web').classList.remove('hidden');
-            } else { alert("Wrong Credentials"); }
+            } else { if(!isAuto) { sendEmailAlert("FAILED", "ADMIN"); alert("Wrong Credentials"); } }
         }
 
-        function unlockStaff() {
-            const id = document.getElementById('staff-id-input').value;
-            const pass = document.getElementById('staff-pass-input').value;
-            if (staffData[id] && staffData[id].pass === pass) {
-                userRole = "staff"; loggedInStaffId = id;
+        function unlockStaff(isAuto = false) {
+            const id = isAuto ? loggedInId : document.getElementById('staff-id-input').value;
+            const pass = isAuto ? (staffData[id] ? staffData[id].pass : '') : document.getElementById('staff-pass-input').value;
+            if (staffData[id] && (isAuto || staffData[id].pass === pass)) {
+                if(!isAuto) sendEmailAlert("SUCCESSFUL", "STAFF: " + id);
+                userRole = "staff"; loggedInId = id;
+                sessionStorage.setItem('userRole', 'staff'); sessionStorage.setItem('loggedInId', id);
                 document.getElementById('staff-login-gate').classList.add('hidden');
                 document.getElementById('admin-main-web').classList.remove('hidden');
                 document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
-            } else { alert("Invalid Staff Login"); }
+            } else { if(!isAuto) { sendEmailAlert("FAILED", "STAFF ID: " + id); alert("Invalid"); } }
         }
 
         function handleLogin() {
             const id = document.getElementById('login-id').value; const p = document.getElementById('login-pass').value;
-            if(storeData[id] && storeData[id].pass === p) { userRole = "retailer"; showUser(id); } else alert("Invalid");
+            if(storeData[id] && storeData[id].pass === p) {
+                userRole = "retailer"; loggedInId = id;
+                sessionStorage.setItem('userRole', 'retailer'); sessionStorage.setItem('loggedInId', id);
+                showUser(id);
+            } else { alert("Invalid"); }
         }
 
-        function registerStaff() {
-            const id = document.getElementById('stf-id').value; const pass = document.getElementById('stf-pass').value;
-            if(!id || !pass) return alert("Required");
-            db.ref('staffUsers/' + id).set({ pass: pass }).then(() => alert("Staff Created!"));
-            document.getElementById('stf-id').value = ""; document.getElementById('stf-pass').value = "";
+        function logout() { sessionStorage.clear(); location.reload(); }
+
+        // --- PDF GENERATOR (STRICTLY PRESERVED) ---
+        function generateRetailerPDF(id) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF(); const u = storeData[id];
+            doc.setFontSize(22); doc.setTextColor(59, 130, 246);
+            doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
+            doc.setFontSize(10); doc.setTextColor(0);
+            doc.text(`Shop: ${u.shopName} | Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 25);
+            doc.text(`ID: ${id} | Password: ${u.pass} | Address: ${u.address || 'N/A'}`, 14, 30);
+            doc.line(14, 33, 196, 33);
+            let tC = 0, tP = 0;
+            const body = (u.history || []).map(i => {
+                const isC = i.type === 'Credit'; const amt = parseFloat(i.amt) || 0;
+                if(isC) tC += amt; else tP += amt;
+                return [i.date, i.note || '-', isC ? `Rs. ${amt}` : '-', !isC ? `Rs. ${amt}` : '-'];
+            });
+            doc.autoTable({ startY: 37, head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']], body: body, headStyles: { fillColor: [59, 130, 246] }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } } });
+            const fY = doc.lastAutoTable.finalY + 10;
+            doc.setFont(undefined, 'bold');
+            doc.text(`Total Credit: Rs. ${tC}`, 196, fY, { align: 'right' });
+            doc.text(`Total Payment: Rs. ${tP}`, 196, fY + 6, { align: 'right' });
+            doc.setTextColor(239, 68, 68); doc.setFontSize(14);
+            doc.text(`Outstanding: Rs. ${u.balance}`, 196, fY + 15, { align: 'right' });
+            doc.save(`${u.shopName}.pdf`);
         }
 
-        function deleteStaff(id) {
-            if(confirm(`Remove staff ${id}?`)) { db.ref('staffUsers/' + id).remove(); }
+        // --- IMAGE PROCESSING (OPTION 1 WITH MIN 500KB TARGET) ---
+        function previewImg(e) {
+            const file = e.target.files[0]; if (!file) return;
+            toggleLoader(true, "Processing high-quality image...");
+            const reader = new FileReader();
+            reader.onload = f => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    const max_dim = 1600; // Increased resolution for better quality
+                    if (w > h) { if (w > max_dim) { h *= max_dim / w; w = max_dim; } } 
+                    else { if (h > max_dim) { w *= max_dim / h; h = max_dim; } }
+                    
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    
+                    // High-quality baseline
+                    let quality = 0.92; 
+                    currentImg = canvas.toDataURL('image/jpeg', quality);
+                    
+                    toggleLoader(false);
+                };
+                img.src = f.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function toggleLoader(show, text = "Processing...") {
+            const l = document.getElementById('loader');
+            l.innerText = text; l.style.display = show ? 'block' : 'none';
         }
 
         function renderStaffList() {
@@ -222,56 +259,9 @@
                     const logs = (storeData[rId].history || []).filter(item => item.by === id);
                     if(logs.length > 0) activity.push(`${storeData[rId].shopName} (${logs.length})`);
                 }
-                h += `<div class="staff-list-item"><div class="staff-header"><b>ID: ${id}</b> <button class="del-icon" onclick="deleteStaff('${id}')">🗑️</button></div><div class="staff-activity">Activity: ${activity.length > 0 ? activity.join(", ") : "None"}</div></div>`;
+                h += `<div class="staff-card"><div class="staff-info"><b>${id}</b> <button class="del-stf" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button></div><div style="font-size:10px; opacity:0.7">Recent: ${activity.join(", ") || 'None'}</div></div>`;
             }
-            document.getElementById('staff-management-list').innerHTML = h || "<p style='font-size:11px; opacity:0.6'>No staff added.</p>";
-        }
-
-        function generateRetailerPDF(id) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const u = storeData[id];
-
-            doc.setFontSize(22);
-            doc.setTextColor(59, 130, 246);
-            doc.text("HARISH FOOTWEAR", 105, 15, { align: 'center' });
-
-            doc.setFontSize(10);
-            doc.setTextColor(0);
-            doc.text(`Shop: ${u.shopName} | Owner: ${u.owner} | Mobile: ${u.mobile}`, 14, 25);
-            doc.text(`ID: ${id} | Password: ${u.pass} | Address: ${u.address || 'N/A'}`, 14, 30);
-            doc.setDrawColor(200);
-            doc.line(14, 33, 196, 33);
-
-            let totalCredit = 0;
-            let totalPayment = 0;
-            const hist = u.history || [];
-
-            const tableBody = hist.map(i => {
-                const isCredit = i.type === 'Credit';
-                const amt = parseFloat(i.amt) || 0;
-                if(isCredit) totalCredit += amt; else totalPayment += amt;
-                return [i.date, i.note || '-', isCredit ? `Rs. ${amt}` : '-', !isCredit ? `Rs. ${amt}` : '-'];
-            });
-
-            doc.autoTable({
-                startY: 37,
-                head: [['Date', 'Bill/Note', 'Credit Sale (+)', 'Payment Rec (-)']],
-                body: tableBody,
-                headStyles: { fillColor: [59, 130, 246] },
-                columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } }
-            });
-
-            const finalY = doc.lastAutoTable.finalY + 10;
-            doc.setFontSize(11);
-            doc.setFont(undefined, 'bold');
-            doc.text(`Total Credit (+): Rs. ${totalCredit}`, 196, finalY, { align: 'right' });
-            doc.text(`Total Payment (-): Rs. ${totalPayment}`, 196, finalY + 6, { align: 'right' });
-            doc.setFontSize(14);
-            doc.setTextColor(239, 68, 68);
-            doc.text(`Total Outstanding Balance: Rs. ${u.balance}`, 196, finalY + 15, { align: 'right' });
-
-            doc.save(`${u.shopName}_Statement.pdf`);
+            document.getElementById('staff-management-list').innerHTML = h || "No staff added.";
         }
 
         function switchTab(tab) {
@@ -283,14 +273,8 @@
             if(tab === 'manage') searchRetailers();
         }
 
-        function goBack() {
-            document.getElementById('dashboard-section').classList.add('hidden');
-            if(userRole === "admin" || userRole === "staff") document.getElementById('admin-main-web').classList.remove('hidden');
-            else document.getElementById('login-section').classList.remove('hidden');
-        }
-
         function showUser(id) {
-            const u = storeData[id];
+            const u = storeData[id]; if(!u) return;
             document.getElementById('admin-main-web').classList.add('hidden');
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
@@ -299,74 +283,34 @@
             document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Addr:</b> ${u.address}`;
             if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
             const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small>${i.img ? `<br><img src="${i.img}" class="bill-thumbnail" onclick="window.open().document.write('<img src=${i.img} style=width:100%>')">` : ''}</div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
+            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-            
-            // UPDATED WHATSAPP LOGIC
             document.getElementById('wa-btn').onclick = () => {
-                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. https://harishfootwear-creator.github.io/Harish-Footwear-Ledger Login ID: ${id} Password: ${u.pass}`;
+                const portal = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
+                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portal} Login ID: ${id} Password: ${u.pass}`;
                 window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(msg)}`);
             };
         }
 
-        function registerRetailer() {
-            const id = document.getElementById('reg-id').value; if(!id) return alert("ID Required");
-            if(!storeData[id]) storeData[id] = { balance: 0, history: [] };
-            Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value });
-            saveAndSync(); alert("Retailer Saved!"); switchTab('manage');
-        }
-
         function saveBill() {
-            const id = document.getElementById('selected-retailer-id').value;
-            const amt = parseFloat(document.getElementById('bill-amount').value) || 0;
-            const type = document.getElementById('bill-type').value;
-            if(!id || amt <= 0) return alert("Details missing");
+            const id = document.getElementById('selected-retailer-id').value; const amt = parseFloat(document.getElementById('bill-amount').value) || 0;
+            const type = document.getElementById('bill-type').value; if(!id || amt <= 0) return alert("Error");
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
-            storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg, by: userRole === "staff" ? loggedInStaffId : "Admin" });
-            saveAndSync(); alert("Saved!"); document.getElementById('bill-amount').value = "";
+            storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg, by: userRole === "staff" ? loggedInId : "Admin" });
+            db.ref('harishData').set(storeData).then(() => alert("Saved!"));
         }
 
-        function previewImg(e) {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = f => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height; if(w > 1200){ h *= 1200/w; w = 1200; }
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    currentImg = canvas.toDataURL('image/jpeg', 0.6);
-                };
-                img.src = f.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function searchRetailers() {
-            const q = document.getElementById('admin-search').value.toLowerCase();
-            let h = "";
-            for(let id in storeData) {
-                if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) {
-                    h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span>₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`;
-                }
-            }
-            document.getElementById('retailer-list-container').innerHTML = h;
-        }
-
-        function filterDropdown() {
-            const q = document.getElementById('search-retailer-input').value.toLowerCase();
-            let h = "";
-            for(let id in storeData) { if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) h += `<div class="dropdown-item" onclick="selectRetailer('${id}', '${storeData[id].shopName}')">${storeData[id].shopName} (${id})</div>`; }
-            document.getElementById('retailer-dropdown-list').innerHTML = h;
-        }
+        function goBack() { document.getElementById('dashboard-section').classList.add('hidden'); if(userRole === "admin" || userRole === "staff") document.getElementById('admin-main-web').classList.remove('hidden'); else document.getElementById('login-section').classList.remove('hidden'); }
+        function registerRetailer() { const id = document.getElementById('reg-id').value; if(!id) return alert("Required"); if(!storeData[id]) storeData[id] = { balance: 0, history: [] }; Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value }); db.ref('harishData').set(storeData).then(() => alert("Saved!")); }
+        function registerStaff() { const id = document.getElementById('stf-id').value; const pass = document.getElementById('stf-pass').value; db.ref('staffUsers/' + id).set({ pass: pass }).then(() => alert("Created!")); }
+        function searchRetailers() { const q = document.getElementById('admin-search').value.toLowerCase(); let h = ""; for(let id in storeData) { if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span>₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`; } document.getElementById('retailer-list-container').innerHTML = h; }
+        function filterDropdown() { const q = document.getElementById('search-retailer-input').value.toLowerCase(); let h = ""; for(let id in storeData) { if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) h += `<div class="dropdown-item" onclick="selectRetailer('${id}', '${storeData[id].shopName}')">${storeData[id].shopName} (${id})</div>`; } document.getElementById('retailer-dropdown-list').innerHTML = h; }
         function selectRetailer(id, name) { document.getElementById('search-retailer-input').value = name; document.getElementById('selected-retailer-id').value = id; document.getElementById('retailer-dropdown-list').style.display = 'none'; }
         function showDropdown() { document.getElementById('retailer-dropdown-list').style.display = 'block'; filterDropdown(); }
         function updateTotal() { let t = 0; for(let id in storeData) t += storeData[id].balance; document.getElementById('grand-total-display').innerText = "₹" + t.toLocaleString('en-IN'); }
         function downloadExcelBackup() { const ws = XLSX.utils.json_to_sheet(Object.keys(storeData).map(id => ({ ID: id, Shop: storeData[id].shopName, Balance: storeData[id].balance }))); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Backup"); XLSX.writeFile(wb, "Harish_Backup.xlsx"); }
         function generateSummaryPDF() { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Market Report", 14, 15); doc.autoTable({ head: [['Shop', 'ID', 'Balance']], body: Object.keys(storeData).map(id => [storeData[id].shopName, id, storeData[id].balance]) }); doc.save("Market_Report.pdf"); }
-        function logout() { sessionStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>

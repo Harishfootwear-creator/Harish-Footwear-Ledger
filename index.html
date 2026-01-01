@@ -29,10 +29,10 @@
         #loader { position: fixed; top: 20px; right: 20px; background: var(--warning); color: black; padding: 8px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; display: none; z-index: 9999; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         #retailer-dropdown-list { position: absolute; width: 100%; max-height: 200px; overflow-y: auto; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 0 0 10px 10px; z-index: 100; display: none; }
         .dropdown-item { padding: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .staff-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
-        .del-stf { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 16px; float: right; }
         .refresh-btn { position: fixed; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 8px 12px; border-radius: 50%; cursor: pointer; font-size: 16px; z-index: 10000; backdrop-filter: blur(5px); transition: 0.3s; }
         .refresh-btn:hover { background: var(--primary); transform: rotate(90deg); }
+        .staff-card { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .del-stf { color: var(--danger); cursor: pointer; background: none; border: none; font-size: 16px; float: right; }
     </style>
 </head>
 <body>
@@ -118,16 +118,15 @@
     <script>
         // --- 1. EMAILJS CONFIGURATION ---
         (function(){
-            emailjs.init("YOUR_PUBLIC_KEY"); // REPLACE WITH YOUR PUBLIC KEY
+            emailjs.init("YOUR_PUBLIC_KEY"); 
         })();
 
         function sendEmailAlert(type, user) {
             const templateParams = {
-                message: `Security Update: A ${type} login attempt was made by user: ${user}.`,
-                time: new Date().toLocaleString(),
+                message: `Security Update: A ${type} login attempt was made by user: ${user} at ${new Date().toLocaleString()}.`,
                 to_email: "pg531381@gmail.com"
             };
-            emailjs.send('service_j2gypmw', 'YOUR_TEMPLATE_ID', templateParams); // REPLACE WITH YOUR TEMPLATE ID
+            emailjs.send('service_j2gypmw', 'YOUR_TEMPLATE_ID', templateParams);
         }
 
         const firebaseConfig = {
@@ -193,7 +192,53 @@
 
         function logout() { sessionStorage.clear(); location.reload(); }
 
-        // --- PDF GENERATOR (STRICTLY PRESERVED) ---
+        // --- NEW ITERATIVE IMAGE PROCESSING (MIN 500KB TARGET) ---
+        function previewImg(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            loader.innerText = "Processing High-Res Image...";
+
+            const reader = new FileReader();
+            reader.onload = f => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // We increase resolution to ensure file size doesn't drop too low
+                    let width = img.width, height = img.height;
+                    const minResolution = 2000; 
+                    if (width < minResolution) {
+                        height *= minResolution / width;
+                        width = minResolution;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Iterative quality adjustment to hit ~500KB
+                    let quality = 0.9; 
+                    let dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    
+                    // Check size (base64 string size * 0.75 approximates byte size)
+                    while ((dataUrl.length * 0.75) < 512000 && quality < 1.0) {
+                        quality += 0.05;
+                        dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    }
+
+                    currentImg = dataUrl;
+                    loader.style.display = 'none';
+                    alert("Image processed at approx. " + Math.round(dataUrl.length * 0.75 / 1024) + " KB");
+                };
+                img.src = f.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- PDF GENERATOR (FINANCIAL THEME) ---
         function generateRetailerPDF(id) {
             const { jsPDF } = window.jspdf; const doc = new jsPDF(); const u = storeData[id];
             doc.setFontSize(22); doc.setTextColor(59, 130, 246);
@@ -208,47 +253,12 @@
                 if(isC) tC += amt; else tP += amt;
                 return [i.date, i.note || '-', isC ? `Rs. ${amt}` : '-', !isC ? `Rs. ${amt}` : '-'];
             });
-            doc.autoTable({ startY: 37, head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']], body: body, headStyles: { fillColor: [59, 130, 246] }, columnStyles: { 2: { halign: 'right' }, 3: { halign: 'right' } } });
+            doc.autoTable({ startY: 37, head: [['Date', 'Bill/Note', 'Credit (+)', 'Payment (-)']], body: body, headStyles: { fillColor: [59, 130, 246] } });
             const fY = doc.lastAutoTable.finalY + 10;
-            doc.setFont(undefined, 'bold');
             doc.text(`Total Credit: Rs. ${tC}`, 196, fY, { align: 'right' });
             doc.text(`Total Payment: Rs. ${tP}`, 196, fY + 6, { align: 'right' });
-            doc.setTextColor(239, 68, 68); doc.setFontSize(14);
-            doc.text(`Outstanding: Rs. ${u.balance}`, 196, fY + 15, { align: 'right' });
+            doc.setTextColor(239, 68, 68); doc.text(`Outstanding: Rs. ${u.balance}`, 196, fY + 15, { align: 'right' });
             doc.save(`${u.shopName}.pdf`);
-        }
-
-        // --- IMAGE PROCESSING (OPTION 1 WITH MIN 500KB TARGET) ---
-        function previewImg(e) {
-            const file = e.target.files[0]; if (!file) return;
-            toggleLoader(true, "Processing high-quality image...");
-            const reader = new FileReader();
-            reader.onload = f => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height;
-                    const max_dim = 1600; // Increased resolution for better quality
-                    if (w > h) { if (w > max_dim) { h *= max_dim / w; w = max_dim; } } 
-                    else { if (h > max_dim) { w *= max_dim / h; h = max_dim; } }
-                    
-                    canvas.width = w; canvas.height = h;
-                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    
-                    // High-quality baseline
-                    let quality = 0.92; 
-                    currentImg = canvas.toDataURL('image/jpeg', quality);
-                    
-                    toggleLoader(false);
-                };
-                img.src = f.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function toggleLoader(show, text = "Processing...") {
-            const l = document.getElementById('loader');
-            l.innerText = text; l.style.display = show ? 'block' : 'none';
         }
 
         function renderStaffList() {
@@ -259,9 +269,9 @@
                     const logs = (storeData[rId].history || []).filter(item => item.by === id);
                     if(logs.length > 0) activity.push(`${storeData[rId].shopName} (${logs.length})`);
                 }
-                h += `<div class="staff-card"><div class="staff-info"><b>${id}</b> <button class="del-stf" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button></div><div style="font-size:10px; opacity:0.7">Recent: ${activity.join(", ") || 'None'}</div></div>`;
+                h += `<div class="staff-card"><button class="del-stf" onclick="db.ref('staffUsers/${id}').remove()">🗑️</button><b>${id}</b><div style="font-size:10px; opacity:0.7">Activity: ${activity.join(", ") || 'None'}</div></div>`;
             }
-            document.getElementById('staff-management-list').innerHTML = h || "No staff added.";
+            document.getElementById('staff-management-list').innerHTML = h || "No staff.";
         }
 
         function switchTab(tab) {
@@ -280,16 +290,11 @@
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('u-shop').innerText = u.shopName;
             document.getElementById('u-balance').innerText = "Balance: ₹" + u.balance;
-            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile} | <b>Addr:</b> ${u.address}`;
+            document.getElementById('u-profile-details').innerHTML = `<b>Owner:</b> ${u.owner} | <b>Mobile:</b> ${u.mobile}`;
             if(userRole === "admin") document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
-            const hist = u.history || [];
-            document.getElementById('u-history').innerHTML = hist.map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b class="${i.type === 'Credit' ? 'amt-pos' : 'amt-neg'}">₹${i.amt}</b></div>`).join('');
+            document.getElementById('u-history').innerHTML = (u.history || []).map(i => `<div class="ledger-item"><div><b>${i.note || i.type}</b><br><small>${i.date} | By: ${i.by || 'Admin'}</small></div><b>₹${i.amt}</b></div>`).join('');
             document.getElementById('pdf-statement-btn').onclick = () => generateRetailerPDF(id);
-            document.getElementById('wa-btn').onclick = () => {
-                const portal = "https://harishfootwear-creator.github.io/Harish-Footwear-Ledger";
-                const msg = `Hello ${u.shopName}, your current outstanding balance with Harish Footwear is ₹${u.balance}. Please check your portal for details. ${portal} Login ID: ${id} Password: ${u.pass}`;
-                window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent(msg)}`);
-            };
+            document.getElementById('wa-btn').onclick = () => window.open(`https://wa.me/${u.mobile}?text=${encodeURIComponent('Hello ' + u.shopName + ', your outstanding: Rs.' + u.balance + '. Portal: https://harishfootwear-creator.github.io/Harish-Footwear-Ledger Login ID: ' + id + ' Password: ' + u.pass)}`);
         }
 
         function saveBill() {
@@ -298,11 +303,10 @@
             storeData[id].balance += (type === "Credit" ? amt : -amt);
             if(!storeData[id].history) storeData[id].history = [];
             storeData[id].history.unshift({ date: document.getElementById('bill-date').value || new Date().toLocaleDateString(), type: type, amt: amt, note: document.getElementById('bill-note').value, img: currentImg, by: userRole === "staff" ? loggedInId : "Admin" });
-            db.ref('harishData').set(storeData).then(() => alert("Saved!"));
+            db.ref('harishData').set(storeData).then(() => { alert("Saved!"); currentImg = ""; });
         }
-
         function goBack() { document.getElementById('dashboard-section').classList.add('hidden'); if(userRole === "admin" || userRole === "staff") document.getElementById('admin-main-web').classList.remove('hidden'); else document.getElementById('login-section').classList.remove('hidden'); }
-        function registerRetailer() { const id = document.getElementById('reg-id').value; if(!id) return alert("Required"); if(!storeData[id]) storeData[id] = { balance: 0, history: [] }; Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value }); db.ref('harishData').set(storeData).then(() => alert("Saved!")); }
+        function registerRetailer() { const id = document.getElementById('reg-id').value; if(!id) return alert("ID Required"); if(!storeData[id]) storeData[id] = { balance: 0, history: [] }; Object.assign(storeData[id], { shopName: document.getElementById('reg-shop').value, owner: document.getElementById('reg-name').value, mobile: document.getElementById('reg-mobile').value, address: document.getElementById('reg-address').value, pass: document.getElementById('reg-pass').value }); db.ref('harishData').set(storeData).then(() => alert("Saved!")); }
         function registerStaff() { const id = document.getElementById('stf-id').value; const pass = document.getElementById('stf-pass').value; db.ref('staffUsers/' + id).set({ pass: pass }).then(() => alert("Created!")); }
         function searchRetailers() { const q = document.getElementById('admin-search').value.toLowerCase(); let h = ""; for(let id in storeData) { if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) h += `<div class="retailer-row"><div style="display:flex; justify-content:space-between"><b>${storeData[id].shopName}</b><span>₹${storeData[id].balance}</span></div><button onclick="showUser('${id}')" class="btn-action" style="padding:8px; font-size:12px; background:var(--primary);">Details</button></div>`; } document.getElementById('retailer-list-container').innerHTML = h; }
         function filterDropdown() { const q = document.getElementById('search-retailer-input').value.toLowerCase(); let h = ""; for(let id in storeData) { if(id.includes(q) || storeData[id].shopName.toLowerCase().includes(q)) h += `<div class="dropdown-item" onclick="selectRetailer('${id}', '${storeData[id].shopName}')">${storeData[id].shopName} (${id})</div>`; } document.getElementById('retailer-dropdown-list').innerHTML = h; }
